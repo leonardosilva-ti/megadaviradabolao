@@ -8,7 +8,7 @@
  *      para você testar todas as telas imediatamente no navegador!
  * 
  * 2. PIX_CONFIG:
- *    - Chave PIX, Tipo e Nome do titular para pagamento dos participantes.
+ *    - Chave PIX, Tipo e Nome do titular para pagamento dos participantes.;.
  */
 
 const CONFIG = {
