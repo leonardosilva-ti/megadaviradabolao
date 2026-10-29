@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0c2b1d" />
+      <stop offset="100%" stop-color="#061c12" />
+    </radialGradient>
+    <radialGradient id="leafGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#4ade80" />
+      <stop offset="60%" stop-color="#16a34a" />
+      <stop offset="100%" stop-color="#14532d" />
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd700" />
+      <stop offset="50%" stop-color="#d4af37" />
+      <stop offset="100%" stop-color="#996515" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#ffd700" flood-opacity="0.4" />
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#bg)" />
+  <circle cx="256" cy="256" r="215" fill="none" stroke="url(#gold)" stroke-width="14" filter="url(#glow)" />
+  <g transform="translate(256, 240) scale(1.1)">
+    <!-- 4 Leaves -->
+    <circle cx="-50" cy="-50" r="65" fill="url(#leafGrad)" />
+    <circle cx="50" cy="-50" r="65" fill="url(#leafGrad)" />
+    <circle cx="-50" cy="50" r="65" fill="url(#leafGrad)" />
+    <circle cx="50" cy="50" r="65" fill="url(#leafGrad)" />
+    <circle cx="0" cy="0" r="45" fill="url(#leafGrad)" />
+    <!-- Stem -->
+    <path d="M 0,25 Q 20,80 15,115" stroke="#16a34a" stroke-width="14" stroke-linecap="round" fill="none" />
+  </g>
+  <!-- Sparkles -->
+  <polygon points="120,120 125,100 130,120 150,125 130,130 125,150 120,130 100,125" fill="#ffd700" />
+  <polygon points="380,130 384,115 388,130 403,134 388,138 384,153 380,138 365,134" fill="#ffd700" />
+  <polygon points="390,370 394,355 398,370 413,374 398,378 394,393 390,378 375,374" fill="#ffd700" />
+</svg>

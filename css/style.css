@@ -1,0 +1,754 @@
+/* ==========================================================================
+   BOLÃO MEGA DA VIRADA - ESTILOS PRINCIPAIS
+   Tema: Ouro & Verde Esmeralda da Sorte
+   ========================================================================== */
+
+:root {
+  --bg-primary: #061c12;
+  --bg-secondary: #0c2b1d;
+  --bg-card: rgba(15, 45, 30, 0.85);
+  --bg-card-hover: rgba(20, 58, 38, 0.95);
+  --border-card: rgba(218, 165, 32, 0.25);
+  --border-highlight: #d4af37;
+
+  --gold-primary: #f5c518;
+  --gold-gradient: linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8010 100%);
+  --gold-glow: rgba(255, 215, 0, 0.35);
+
+  --green-mega: #107c41;
+  --green-light: #20ba68;
+  --green-glow: rgba(32, 186, 104, 0.4);
+
+  --text-main: #f0f7f3;
+  --text-muted: #9eb6aa;
+  --text-gold: #fce183;
+  --text-dark: #071910;
+
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --success: #10b981;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-gold: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(16, 124, 65, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(12, 43, 29, 0.9) 0%, var(--bg-primary) 100%);
+  background-attachment: fixed;
+  color: var(--text-main);
+  min-height: 100vh;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem 1rem;
+  flex: 1;
+}
+
+/* Header & Logo */
+.site-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem 1rem;
+}
+
+.site-badge {
+  display: inline-block;
+  padding: 0.3rem 0.9rem;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid var(--border-highlight);
+  color: var(--gold-primary);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.75rem;
+}
+
+.site-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  letter-spacing: -0.5px;
+  margin-bottom: 0.3rem;
+}
+
+.site-subtitle {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* Banner de Modo Demo/Mock */
+.mock-banner {
+  background: linear-gradient(90deg, #1e3a2b, #2b4533);
+  border: 1px dashed var(--gold-primary);
+  color: var(--text-gold);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 1.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  border-color: rgba(218, 165, 32, 0.4);
+}
+
+.card-header {
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Formulários */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: var(--text-main);
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: rgba(8, 28, 18, 0.9);
+  border: 1.5px solid rgba(212, 175, 55, 0.3);
+  border-radius: var(--radius-md);
+  color: #ffffff;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus, .form-select:focus {
+  outline: none;
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+.form-input::placeholder {
+  color: #5d7e6f;
+}
+
+.form-help {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+/* Botões */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.85rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--gold-gradient);
+  color: var(--text-dark);
+  box-shadow: var(--shadow-gold);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #20ba68, #107c41);
+  color: white;
+  box-shadow: 0 4px 15px var(--green-glow);
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(32, 186, 104, 0.6);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.btn-outline-gold {
+  background: transparent;
+  color: var(--gold-primary);
+  border: 1.5px solid var(--gold-primary);
+}
+
+.btn-outline-gold:hover {
+  background: rgba(212, 175, 55, 0.15);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Tabs / Alternador de telas */
+.tabs-nav {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-md);
+  padding: 0.3rem;
+  margin-bottom: 1.5rem;
+  gap: 0.3rem;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.tab-btn.active {
+  background: var(--bg-card-hover);
+  color: var(--gold-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ==========================================================================
+   WIZARD DE JOGOS & SELEÇÃO DE 60 NÚMEROS
+   ========================================================================== */
+
+.wizard-progress {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  position: relative;
+  padding: 0 0.5rem;
+}
+
+.wizard-step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.step-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.step-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  font-weight: 600;
+}
+
+.wizard-step-indicator.active .step-circle {
+  background: var(--gold-primary);
+  border-color: #ffffff;
+  color: var(--text-dark);
+  box-shadow: 0 0 12px var(--gold-glow);
+  transform: scale(1.1);
+}
+
+.wizard-step-indicator.active .step-label {
+  color: var(--gold-primary);
+}
+
+.wizard-step-indicator.completed .step-circle {
+  background: var(--green-light);
+  border-color: #ffffff;
+  color: white;
+}
+
+/* Barra de Dezenas Selecionadas no Jogo Atual */
+.selected-summary-bar {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.selected-balls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  min-height: 48px;
+  align-items: center;
+}
+
+.selected-counter {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.selected-counter strong {
+  color: var(--gold-primary);
+  font-size: 1.1rem;
+}
+
+/* Grade de 60 Bolinhas */
+.lottery-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 600px) {
+  .lottery-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.4rem;
+  }
+}
+
+.ball-btn {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: radial-gradient(circle at 35% 35%, #184b34, #0b2b1d);
+  color: var(--text-main);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  user-select: none;
+}
+
+.ball-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.08);
+  border-color: var(--gold-primary);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.5);
+}
+
+.ball-btn.selected {
+  background: radial-gradient(circle at 35% 35%, #ffd700, #c59b27);
+  border-color: #ffffff;
+  color: #071c10;
+  font-weight: 900;
+  transform: scale(1.08);
+  box-shadow: 0 0 14px var(--gold-glow);
+}
+
+.ball-btn:disabled:not(.selected) {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+/* Bolinha pequena para visualização */
+.ball-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffd700, #b8860b);
+  color: #05160e;
+  font-weight: 800;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.ball-tag.empty {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px dashed rgba(255, 255, 255, 0.2);
+  color: transparent;
+}
+
+.ball-tag.ball-admin {
+  background: radial-gradient(circle at 35% 35%, #22c55e, #15803d);
+  color: white;
+}
+
+/* ==========================================================================
+   TELA DE PAGAMENTO PIX
+   ========================================================================== */
+
+.pix-container {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.pix-value-box {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(16, 124, 65, 0.2));
+  border: 2px solid var(--gold-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-gold);
+}
+
+.pix-price-tag {
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: var(--gold-primary);
+  margin: 0.5rem 0;
+}
+
+/* Detalhamento do valor */
+.pix-explanation-card {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 1rem;
+  text-align: left;
+  border-left: 4px solid var(--gold-primary);
+}
+
+.pix-breakdown-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.92rem;
+}
+
+.pix-breakdown-item:last-child {
+  margin-bottom: 0;
+}
+
+.pix-breakdown-item .badge {
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.badge-gold {
+  background: var(--gold-primary);
+  color: var(--text-dark);
+}
+
+.badge-green {
+  background: var(--green-light);
+  color: white;
+}
+
+.pix-key-display {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+  word-break: break-all;
+}
+
+.pix-key-text {
+  font-family: monospace;
+  font-size: 1.05rem;
+  color: var(--text-gold);
+}
+
+/* ==========================================================================
+   STATUS BADGES & DASHBOARD
+   ========================================================================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pago {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid #10b981;
+}
+
+.status-pendente {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid #f59e0b;
+}
+
+/* Cartões de Jogos */
+.game-card {
+  background: rgba(10, 36, 24, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: transform 0.2s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.game-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Super Jogo do Bolão em Destaque Especial */
+.super-game-card {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(16, 124, 65, 0.25));
+  border: 2px solid var(--gold-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-gold);
+  position: relative;
+  overflow: hidden;
+}
+
+.super-game-card::before {
+  content: "★ SUPER JOGO DO BOLÃO ★";
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--gold-gradient);
+  color: #071910;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 0.2rem 0.8rem;
+  border-bottom-left-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+}
+
+/* Tabela Administrativa */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 1rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.admin-table th {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.85rem 1rem;
+  color: var(--gold-primary);
+  font-weight: 700;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.admin-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.admin-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Alertas & Toasts */
+.toast-container {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 380px;
+  width: calc(100% - 3rem);
+}
+
+.toast {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  border-left: 5px solid var(--gold-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  animation: slideIn 0.3s ease;
+}
+
+.toast.toast-error {
+  border-left-color: var(--danger);
+}
+
+.toast.toast-success {
+  border-left-color: var(--success);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Loader */
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Rodapé */
+.site-footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.site-footer a {
+  color: var(--gold-primary);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+}

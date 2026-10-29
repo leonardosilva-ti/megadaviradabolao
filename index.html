@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bolão da Mega da Virada - Família & Amigos</title>
+  
+  <!-- Favicon com Trevo da Sorte -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍀</text></svg>">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#061c12">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mega Bolão">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Notificações Toast -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Cabeçalho Principal -->
+  <header class="site-header">
+    <div class="site-badge">🍀 Edição Especial 🍀</div>
+    <h1 class="site-title">Mega da Virada</h1>
+    <p class="site-subtitle" id="siteSubtitleText">Bolão da Família & Amigos • Sorteio 31/12</p>
+  </header>
+
+  <main class="container">
+
+    <!-- Banner de Instalação do Aplicativo (Android / Desktop) -->
+    <div id="pwaInstallBanner" class="card" style="display: none; padding: 1rem 1.25rem; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(16, 124, 65, 0.3)); border: 1.5px solid var(--gold-primary); margin-bottom: 1.5rem; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 2rem;">📲</span>
+        <div>
+          <strong style="color: #ffffff; font-size: 0.95rem;">Instalar Aplicativo no Celular</strong>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Acesse mais rápido direto da sua tela inicial como um app!</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button type="button" class="btn btn-primary" id="btnPwaInstall" style="padding: 0.45rem 1rem; font-size: 0.85rem;" onclick="App.installPwa()">
+          Instalar App
+        </button>
+        <button type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; padding: 0.3rem;" onclick="App.dismissPwaBanner()">✕</button>
+      </div>
+    </div>
+
+    <!-- Banner de Instalação para iPhone/iPad (Safari iOS) -->
+    <div id="iosInstallBanner" class="card" style="display: none; padding: 0.85rem 1.25rem; background: rgba(12, 43, 29, 0.9); border: 1px dashed var(--gold-primary); margin-bottom: 1.5rem; align-items: center; justify-content: space-between; gap: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.6rem;">🍎</span>
+        <p style="font-size: 0.83rem; color: #fce183; margin: 0;">
+          Para instalar no iPhone: toque no ícone de <strong>Compartilhar (⎋)</strong> no Safari e selecione <strong>"Adicionar à Tela de Início"</strong>.
+        </p>
+      </div>
+      <button type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem;" onclick="App.dismissIosBanner()">✕</button>
+    </div>
+
+    <!-- Banner de Modo Local/Demonstração -->
+    <div id="mockBanner" class="mock-banner" style="display: none;">
+      <span>⚙️ <strong>Modo Demonstração Ativo</strong>: Os dados estão sendo salvos localmente no seu navegador. Para conectar ao Google Sheets, configure o <code>js/config.js</code>.</span>
+    </div>
+
+    <!-- ====================================================================
+         TELA 1: ACESSO / CADASTRO (IDENTIFICAÇÃO)
+         ==================================================================== -->
+    <section id="viewAuth" class="card">
+      <div class="tabs-nav">
+        <button type="button" class="tab-btn active" id="tabBtnLogin" onclick="App.switchAuthTab('login')">
+          Já sou participante (Entrar)
+        </button>
+        <button type="button" class="tab-btn" id="tabBtnRegister" onclick="App.switchAuthTab('register')">
+          Primeiro Acesso (Cadastrar)
+        </button>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form id="formLogin" onsubmit="App.handleLoginSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="loginPhone">Número do WhatsApp / Celular:</label>
+          <input type="tel" id="loginPhone" class="form-input" placeholder="(11) 99999-9999" required autocomplete="tel">
+          <p class="form-help">Informe o telefone utilizado no cadastro.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginBirthdate">Data de Nascimento:</label>
+          <input type="text" id="loginBirthdate" class="form-input" placeholder="DD/MM/AAAA" maxlength="10" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="btnLoginSubmit">
+          <span>Acessar Meu Bolão</span>
+        </button>
+      </form>
+
+      <!-- Formulário de Cadastro -->
+      <form id="formRegister" onsubmit="App.handleRegisterSubmit(event)" style="display: none;">
+        <!-- Informativo do Bolão Privado e Regras da Cota -->
+        <div class="bolao-terms-box" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: var(--radius-md); padding: 1.15rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
+            <span style="font-size: 1.3rem;">ℹ️</span>
+            <strong style="color: var(--gold-primary); font-size: 0.98rem;">Aviso Importante: Como Funciona o Nosso Bolão</strong>
+          </div>
+          
+          <p style="font-size: 0.88rem; color: #e2e8f0; line-height: 1.5; margin-bottom: 0.75rem;">
+            Este é um <strong>bolão privado e independente</strong> organizado entre familiares e amigos, e <strong>não possui vínculo nem é organizado pela Caixa Econômica Federal</strong>.
+          </p>
+
+          <div style="font-size: 0.86rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 0.75rem;">
+            O valor total da cota é de <strong>R$ 45,00</strong>, dividido da seguinte forma:
+            <ul style="margin: 0.5rem 0 0.5rem 1.25rem; padding: 0;">
+              <li style="margin-bottom: 0.35rem;">
+                <strong>R$ 30,00</strong> destinados aos seus <strong>5 jogos individuais</strong> (você escolhe suas próprias 6 dezenas para cada um deles).
+              </li>
+              <li>
+                <strong>R$ 15,00</strong> destinados ao fundo comum do grupo para registrar <strong>jogos especiais com mais números por aposta</strong> (apostas de 7, 8 ou 9 dezenas). A quantidade e o formato desses jogos dependerão do valor total arrecadado no bolão.
+              </li>
+            </ul>
+          </div>
+
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem;">
+            Todos os jogos registrados ficam disponíveis no painel para conferência transparente de todos os participantes.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regName">Seu Nome Completo:</label>
+          <input type="text" id="regName" class="form-input" placeholder="Ex: Maria da Silva" required autocomplete="name">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regPhone">Número do WhatsApp / Celular:</label>
+          <input type="tel" id="regPhone" class="form-input" placeholder="(11) 99999-9999" required autocomplete="tel">
+          <p class="form-help">Usado para identificar você e confirmar o pagamento.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regBirthdate">Data de Nascimento:</label>
+          <input type="text" id="regBirthdate" class="form-input" placeholder="DD/MM/AAAA" maxlength="10" required>
+        </div>
+
+        <!-- Termo Li e Aceito -->
+        <div class="form-group" style="margin-top: 1rem; margin-bottom: 1.25rem;">
+          <label style="display: flex; align-items: flex-start; gap: 0.65rem; cursor: pointer; font-size: 0.9rem; color: #f1f5f9; background: rgba(0,0,0,0.2); padding: 0.75rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.15);">
+            <input type="checkbox" id="regTermsAccepted" name="termsAccepted" required style="width: 1.25rem; height: 1.25rem; margin-top: 0.1rem; accent-color: var(--gold-primary); cursor: pointer;">
+            <span>Li e aceito as regras e condições deste bolão privado.</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-block" id="btnRegisterSubmit">
+          <span>Cadastrar e Escolher Meus Jogos</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- ====================================================================
+         TELA 2: WIZARD DE 5 JOGOS (SELEÇÃO DE 60 DEZENAS)
+         ==================================================================== -->
+    <section id="viewGamesWizard" class="card" style="display: none;">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">🍀 Seus 5 Palpites da Sorte</h2>
+          <p class="site-subtitle" id="wizardGreeting">Olá! Escolha exatamente 6 números para cada um dos 5 jogos.</p>
+        </div>
+      </div>
+
+      <!-- Barra de Progresso dos 5 Jogos -->
+      <div class="wizard-progress">
+        <div class="wizard-step-indicator active" onclick="App.goToStep(1)" id="stepInd1">
+          <div class="step-circle">1</div>
+          <span class="step-label">Jogo 1</span>
+        </div>
+        <div class="wizard-step-indicator" onclick="App.goToStep(2)" id="stepInd2">
+          <div class="step-circle">2</div>
+          <span class="step-label">Jogo 2</span>
+        </div>
+        <div class="wizard-step-indicator" onclick="App.goToStep(3)" id="stepInd3">
+          <div class="step-circle">3</div>
+          <span class="step-label">Jogo 3</span>
+        </div>
+        <div class="wizard-step-indicator" onclick="App.goToStep(4)" id="stepInd4">
+          <div class="step-circle">4</div>
+          <span class="step-label">Jogo 4</span>
+        </div>
+        <div class="wizard-step-indicator" onclick="App.goToStep(5)" id="stepInd5">
+          <div class="step-circle">5</div>
+          <span class="step-label">Jogo 5</span>
+        </div>
+      </div>
+
+      <!-- Barra de visualização das dezenas selecionadas no jogo atual -->
+      <div class="selected-summary-bar">
+        <div class="selected-counter" id="stepCounterText">
+          Jogo <strong>1 de 5</strong>: <span id="countSelectedBalls">0</span> de <strong>6</strong> números marcados
+        </div>
+        <div class="selected-balls-row" id="currentSelectedBallsRow">
+          <!-- Bolinhas marcadas preenchidas dinamicamente -->
+        </div>
+      </div>
+
+      <!-- Atalhos de conveniência -->
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 1rem;">
+        <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="App.pickRandomNumbers()">
+          🎲 Surpresinha (Completar / Gerar 6)
+        </button>
+        <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="App.clearCurrentGame()">
+          🧹 Limpar
+        </button>
+      </div>
+
+      <!-- Grade de 60 Bolinhas da Mega -->
+      <div class="lottery-grid" id="lotteryGrid60">
+        <!-- Gerado via JavaScript: 1 a 60 -->
+      </div>
+
+      <!-- Botões de Ação do Wizard -->
+      <div style="display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" id="btnPrevStep" onclick="App.prevStep()" style="display: none;">
+          ← Jogo Anterior
+        </button>
+        <button type="button" class="btn btn-primary" id="btnNextStep" onclick="App.nextStep()" style="margin-left: auto;">
+          <span>Próximo Jogo →</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Modal / Revisão Geral dos 5 Jogos antes de enviar -->
+    <section id="viewGamesReview" class="card" style="display: none;">
+      <div class="card-header">
+        <h2 class="card-title">📋 Revisão dos seus 5 Jogos</h2>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 1.25rem;">
+        Confira seus 5 palpites com atenção. Nenhum jogo pode ser idêntico ao outro.
+      </p>
+
+      <div id="reviewGamesList">
+        <!-- Preenchido via JS com os 5 jogos -->
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="App.backToWizard()" style="flex: 1;">
+          ✏️ Alterar Números
+        </button>
+        <button type="button" class="btn btn-success" id="btnConfirmAllGames" onclick="App.submitAllGames()" style="flex: 2;">
+          ✅ Confirmar e Ir para Pagamento
+        </button>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         TELA 3: PAGAMENTO PIX (R$ 45,00)
+         ==================================================================== -->
+    <section id="viewPayment" class="card" style="display: none;">
+      <div class="pix-container">
+        <div class="site-badge">💰 Quase Lá! Finalize sua Participação</div>
+        <h2 style="font-size: 1.6rem; margin-top: 0.5rem; color: #ffffff;">Pagamento da Participação</h2>
+        
+        <div class="pix-value-box">
+          <p style="font-size: 1rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">
+            Valor da Cota Individual
+          </p>
+          <div class="pix-price-tag">R$ 45,00</div>
+          
+          <!-- Explicação Transparente dos R$ 45,00 -->
+          <div class="pix-explanation-card">
+            <h4 style="color: var(--gold-primary); margin-bottom: 0.5rem; font-size: 0.95rem;">
+              ℹ️ Entenda como o seu valor de R$ 45,00 é dividido:
+            </h4>
+            <div class="pix-breakdown-item">
+              <span class="badge badge-gold">R$ 30,00</span>
+              <span>Paga os seus <strong>5 jogos individuais</strong> cadastrados (5 x R$ 6,00 da aposta simples da Mega-Sena).</span>
+            </div>
+            <div class="pix-breakdown-item">
+              <span class="badge badge-green">R$ 15,00</span>
+              <span>Vai para o <strong>fundo comunitário do bolão</strong> para fazermos jogos combinados maiores de <strong>7, 8 ou 9 números</strong>, aumentando exponencialmente as chances de vitória de todos!</span>
+            </div>
+          </div>
+        </div>
+
+        <p style="color: var(--text-main); font-weight: 600; margin-bottom: 0.5rem;">
+          Faça a transferência via PIX para a chave abaixo:
+        </p>
+
+        <div class="pix-key-display">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-align: left;" id="pixKeyTypeLabel">Chave PIX:</div>
+            <div class="pix-key-text" id="pixKeyValue">carregando...</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" id="pixReceiverLabel">Beneficiário: ...</div>
+          </div>
+          <button type="button" class="btn btn-outline-gold" onclick="App.copyPixKey()" style="padding: 0.5rem 0.9rem; font-size: 0.85rem;">
+            📋 Copiar Chave
+          </button>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align: left;">
+          <p style="font-size: 0.9rem; color: #fde68a;">
+            ⚠️ <strong>Importante:</strong> Após realizar o PIX no aplicativo do seu banco, aperte no botão <strong>"Confirmar Pagamento"</strong> logo abaixo para registrar a sua participação e avisar a organização!
+          </p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <button type="button" class="btn btn-success btn-block" id="btnConfirmPayment" onclick="App.confirmPayment()">
+            💳 Confirmar Pagamento Realizado
+          </button>
+          <button type="button" class="btn btn-secondary btn-block" onclick="App.openDashboard()">
+            Ir para o Painel do Participante →
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         TELA 4: PAINEL DO PARTICIPANTE (DASHBOARD)
+         ==================================================================== -->
+    <section id="viewDashboard" style="display: none;">
+      <!-- Card do Perfil e Status -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Bem-vindo(a) ao Bolão</div>
+            <h2 style="font-size: 1.5rem; color: #ffffff;" id="dashUserName">Participante</h2>
+            <div style="font-size: 0.85rem; color: var(--text-muted);" id="dashUserPhone">Telefone</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Status do Pagamento:</div>
+            <div id="dashPaymentBadge" class="status-badge status-pendente">
+              ⏳ Pagamento Pendente
+            </div>
+          </div>
+        </div>
+
+        <div id="dashPaymentAlert" style="margin-top: 1rem; padding: 0.85rem 1rem; background: rgba(245, 158, 11, 0.15); border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <span style="font-size: 0.88rem; color: #fef3c7;" id="dashPaymentAlertMsg">
+            Seu pagamento de R$ 45,00 ainda está pendente de confirmação pelo organizador.
+          </span>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline-gold" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" onclick="App.openPaymentScreen()">
+              Ver Chave Pix
+            </button>
+            <button type="button" class="btn btn-success" id="btnDashConfirmPayment" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" onclick="App.confirmPaymentFromDashboard()">
+              ✓ Já paguei via Pix
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="App.refreshDashboard()">
+            🔄 Atualizar Dados
+          </button>
+          <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="App.logout()">
+            🚪 Sair
+          </button>
+        </div>
+      </div>
+
+      <!-- Abas de visualização do Dashboard -->
+      <div class="tabs-nav">
+        <button type="button" class="tab-btn active" id="tabDashMyGames" onclick="App.switchDashTab('my')">
+          Meus 5 Jogos
+        </button>
+        <button type="button" class="tab-btn" id="tabDashBolaoGames" onclick="App.switchDashTab('bolao')">
+          ★ Super Jogos do Bolão
+        </button>
+        <button type="button" class="tab-btn" id="tabDashOtherGames" onclick="App.switchDashTab('others')">
+          Jogos dos Outros Participantes
+        </button>
+      </div>
+
+      <!-- Banner de Status do Registro na Loteria (renderizado via JS) -->
+      <div id="lotteryNotice" style="display:none;"></div>
+
+      <!-- Botão de download do comprovante -->
+      <div id="dashDownloadBar" style="display:none; margin-bottom: 1rem; text-align: right;">
+        <button type="button" class="btn btn-secondary" style="font-size:0.85rem; padding:0.4rem 0.9rem;" onclick="App.downloadMyReceiptPDF()">
+          📄 Baixar Comprovante (PDF)
+        </button>
+      </div>
+
+      <!-- Seção: Meus Jogos -->
+      <div id="dashSecMyGames" class="card">
+        <div class="card-header">
+          <h3 class="card-title">🎯 Seus Palpites Cadastrados</h3>
+          <span style="font-size: 0.85rem; color: var(--gold-primary);">5 apostas</span>
+        </div>
+        <div id="dashMyGamesList">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+
+      <!-- Seção: Super Jogos Oficiais do Bolão (6 a 9 dezenas) -->
+      <div id="dashSecBolaoGames" class="card" style="display: none;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">🌟 Jogos Especiais Feitos pela Administração</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              Apostas com 7, 8 ou 9 dezenas financiadas pelo fundo comunitário de R$ 15,00 de cada membro!
+            </p>
+          </div>
+        </div>
+        <div id="dashBolaoGamesList">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+
+      <!-- Seção: Jogos de Outros Participantes (Anônimo) -->
+      <div id="dashSecOtherGames" class="card" style="display: none;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">👥 Todos os Jogos da Família & Amigos</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              Total transparência: confira todas as dezenas apostadas no grupo (dados dos participantes mantidos em sigilo).
+            </p>
+          </div>
+        </div>
+        <div id="dashOtherGamesList">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Rodapé com Link para Administração -->
+  <footer class="site-footer">
+    <p>Bolão da Mega da Virada • Organização Familiar & Amigos</p>
+    <p style="margin-top: 0.4rem;">
+      <a href="admin.html">🔒 Área do Organizador / Administração</a>
+    </p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/pdfGenerator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
