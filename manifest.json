@@ -2,12 +2,17 @@
   "name": "Bolão da Mega da Virada",
   "short_name": "Mega Bolão",
   "description": "Aplicativo do Bolão da Família e Amigos para a Mega da Virada",
+  "id": "br.com.megadavirada.bolao",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#061c12",
   "theme_color": "#061c12",
+  "categories": ["entertainment", "games"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icons/icon-192.png",
