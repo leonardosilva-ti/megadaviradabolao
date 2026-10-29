@@ -13,7 +13,7 @@
 
 const CONFIG = {
   // Insira a URL do seu Google Apps Script aqui (veja o README.md para instruções)
-  API_URL: "",
+  API_URL: "https://script.google.com/macros/s/AKfycbxG_VboyLg2lru2tPA24lHnNrFfWK9rQqvCxGKa92MmZT4U5_NX2sugyPVsKM9-4iya/exec",
 
   // Dados do PIX para pagamento
   PIX: {
