@@ -2,7 +2,7 @@
  * SERVICE WORKER - BOLÃO MEGA DA VIRADA PWA
  */
 
-const CACHE_NAME = "mega-bolao-v1";
+const CACHE_NAME = "mega-bolao-v3";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
   "./css/style.css",
   "./js/config.js",
   "./js/api.js",
+  "./js/pdfGenerator.js",
   "./js/app.js",
   "./js/admin.js",
   "./manifest.json",
@@ -52,6 +53,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Ignora requisições de esquemas não-HTTP (ex: chrome-extension://, moz-extension://)
+  if (!event.request.url.startsWith("http://") && !event.request.url.startsWith("https://")) {
+    return;
+  }
+
   // Não cacheia requisições do Google Apps Script
   const url = event.request.url;
   if (url.includes("script.google.com") || url.includes("googleusercontent.com")) {
@@ -63,11 +69,11 @@ self.addEventListener("fetch", (event) => {
       // Se encontrar no cache, tenta buscar versão mais recente na rede em background (Stale-While-Revalidate)
       const fetchPromise = fetch(event.request)
         .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === "basic") {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+              cache.put(event.request, responseToCache).catch(() => {});
+            }).catch(() => {});
           }
           return networkResponse;
         })
