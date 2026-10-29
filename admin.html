@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>Administração - Bolão da Mega da Virada</title>
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👑</text></svg>">
@@ -105,22 +105,22 @@
       </div>
 
       <!-- Métricas Resumo -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-        <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
-          <div style="font-size: 0.85rem; color: var(--text-muted);">Total de Participantes</div>
-          <div style="font-size: 2rem; font-weight: 800; color: #ffffff;" id="metricTotalParticipants">0</div>
+      <div class="admin-metrics-grid">
+        <div class="card admin-metric-card">
+          <div class="admin-metric-label">Total de Participantes</div>
+          <div class="admin-metric-value" style="color: #ffffff;" id="metricTotalParticipants">0</div>
         </div>
-        <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
-          <div style="font-size: 0.85rem; color: var(--text-muted);">Pagamentos Confirmados</div>
-          <div style="font-size: 2rem; font-weight: 800; color: #34d399;" id="metricPaidParticipants">0</div>
+        <div class="card admin-metric-card">
+          <div class="admin-metric-label">Pagamentos Confirmados</div>
+          <div class="admin-metric-value" style="color: #34d399;" id="metricPaidParticipants">0</div>
         </div>
-        <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
-          <div style="font-size: 0.85rem; color: var(--text-muted);">Pagamentos Pendentes</div>
-          <div style="font-size: 2rem; font-weight: 800; color: #fbbf24;" id="metricPendingParticipants">0</div>
+        <div class="card admin-metric-card">
+          <div class="admin-metric-label">Pagamentos Pendentes</div>
+          <div class="admin-metric-value" style="color: #fbbf24;" id="metricPendingParticipants">0</div>
         </div>
-        <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
-          <div style="font-size: 0.85rem; color: var(--text-muted);">Fundo p/ Super Jogos (R$ 15/cota)</div>
-          <div style="font-size: 2rem; font-weight: 800; color: var(--gold-primary);" id="metricPoolFund">R$ 0,00</div>
+        <div class="card admin-metric-card">
+          <div class="admin-metric-label">Fundo p/ Super Jogos (R$ 15/cota)</div>
+          <div class="admin-metric-value" style="color: var(--gold-primary);" id="metricPoolFund">R$ 0,00</div>
         </div>
       </div>
 
@@ -190,7 +190,7 @@
         <!-- Seletor do Tamanho da Aposta -->
         <div class="form-group">
           <label class="form-label">Quantidade de Dezenas deste Jogo:</label>
-          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <div class="game-sizes-container">
             <button type="button" class="btn btn-secondary game-size-btn" data-size="6" onclick="AdminApp.setGameSize(6)">
               6 Dezenas (Simples)
             </button>
