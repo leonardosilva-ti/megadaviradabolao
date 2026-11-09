@@ -1,36 +1,30 @@
-/**
- * CONFIGURAÇÃO GLOBAL DO BOLÃO DA MEGA DA VIRADA
- * 
- * 1. API_URL:
- *    - Cole aqui a URL do Web App gerada após implantar o script no Google Apps Script.
- *    - Exemplo: "https://script.google.com/macros/s/AKfycbx.../exec"
- *    - Se deixar vazio (""), o sistema rodará em MODO LOCAL/DEMO usando LocalStorage
- *      para você testar todas as telas imediatamente no navegador!
- * 
- * 2. PIX_CONFIG:
- *    - Chave PIX, Tipo e Nome do titular para pagamento dos participantes.;.
- */
+// URL da implantação do Google Apps Script (Implantar > Gerenciar implantações).
+// Deixe vazio ("") para rodar em MODO DEMONSTRAÇÃO, com os dados salvos só no navegador.
+export const API_URL =
+  "https://script.google.com/macros/s/AKfycbxG_VboyLg2lru2tPA24lHnNrFfWK9rQqvCxGKa92MmZT4U5_NX2sugyPVsKM9-4iya/exec";
 
-const CONFIG = {
-  // Insira a URL do seu Google Apps Script aqui (veja o README.md para instruções)
-  API_URL: "https://script.google.com/macros/s/AKfycbxG_VboyLg2lru2tPA24lHnNrFfWK9rQqvCxGKa92MmZT4U5_NX2sugyPVsKM9-4iya/exec",
+export const API_TIMEOUT_MS = 45_000;
 
-  // Dados do PIX para pagamento
-  PIX: {
-    chave: "pix.bolao.mega@exemplo.com",
-    tipoChave: "E-mail", // Chave Aleatória, CPF, Telefone ou E-mail
-    titular: "Organizador do Bolão da Família",
-    cidade: "SAO PAULO",
-    valorTotal: 45.00,
-    valorJogosIndividuais: 30.00, // 5 jogos x R$ 6,00
-    valorFundoBolao: 15.00        // Fundo comunitário para super jogos de 7+ dezenas
-  },
+export const EDICAO = {
+  titulo: "Bolão da Família & Amigos",
+  dataSorteio: "31/12/2026",
+  horaSorteio: "20h",
+  // Os jogos são registrados antes por causa da instabilidade do sistema das loterias em 30 e 31/12.
+  dataRegistro: "29/12",
+};
 
-  // Senha padrão de acesso ao painel de administração (usada no modo local)
-  ADMIN_SENHA_PADRAO: "adminmega2025",
+/** Regras da cota. O valor total pode ser sobrescrito pela chave ValorTotal da aba Config. */
+export const COTA = {
+  total: 45,
+  precoAposta: 6, // aposta simples de 6 dezenas
+};
 
-  // Nome do evento / título
-  TITULO_BOLAO: "Bolão da Família & Amigos",
-  ANO_EDICAO: "2025 / 2026",
-  DATA_SORTEIO: "31/12/2025 às 20h"
+export const JOGOS_POR_PARTICIPANTE = 5;
+export const DEZENAS_POR_JOGO = 6;
+export const TAMANHOS_JOGO_OFICIAL = [6, 7, 8, 9];
+
+/** Usado apenas no modo demonstração (no modo real os dados vêm da aba Config da planilha). */
+export const DEMO = {
+  adminSenha: "adminmega2025",
+  pix: { chave: "pix.bolao.mega@exemplo.com", tipo: "E-mail", titular: "Organizador do Bolão" },
 };

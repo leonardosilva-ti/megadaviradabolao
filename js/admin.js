@@ -1,783 +1,349 @@
-/**
- * ============================================================================
- * CONTROLADOR ADMINISTRATIVO - BOLÃO MEGA DA VIRADA
- * ============================================================================
- */
-
-const AdminApp = {
-  adminPassword: null,
-  data: null,
-  activeTab: "participants",
-
-  // Estado para cadastro de jogo oficial (6 a 9 dezenas)
-  targetGameSize: 7, // padrão: super jogo de 7 dezenas
-  adminSelectedBalls: [],
-
-  init: function() {
-    this.checkMockBanner();
-    this.renderAdminLotteryGrid();
-    this.checkSession();
-  },
-
-  checkMockBanner: function() {
-    const banner = document.getElementById("mockBanner");
-    if (banner && Api.isMock()) {
-      banner.style.display = "flex";
-    }
-  },
-
-  checkSession: function() {
-    const savedPass = sessionStorage.getItem("megadavirada_admin_pass");
-    if (savedPass) {
-      this.adminPassword = savedPass;
-      this.loadAdminData();
-    } else {
-      this.showView("login");
-    }
-  },
-
-  logout: function() {
-    sessionStorage.removeItem("megadavirada_admin_pass");
-    this.adminPassword = null;
-    this.data = null;
-    this.showView("login");
-    this.showToast("Sessão administrativa encerrada.", "info");
-  },
-
-  showView: function(view) {
-    document.getElementById("viewAdminLogin").style.display = (view === "login") ? "block" : "none";
-    document.getElementById("viewAdminDashboard").style.display = (view === "dashboard") ? "block" : "none";
-  },
-
-  // ==========================================================================
-  // LOGIN ADMINISTRATIVO
-  // ==========================================================================
-  async handleLogin(event) {
-    event.preventDefault();
-    const passInput = document.getElementById("adminPassword");
-    const pass = passInput.value.trim();
-    const btn = document.getElementById("btnAdminLogin");
-
-    if (!pass) {
-      this.showToast("Informe a senha de administrador.", "error");
-      return;
-    }
-
-    this.setButtonLoading(btn, true, "Verificando...");
-    try {
-      const res = await Api.adminLogin(pass);
-      this.setButtonLoading(btn, false, "Entrar no Painel");
-
-      if (res.success) {
-        this.adminPassword = pass;
-        sessionStorage.setItem("megadavirada_admin_pass", pass);
-        this.showToast("Acesso administrativo confirmado!", "success");
-        this.loadAdminData();
-      } else {
-        this.showToast(res.error || "Senha incorreta.", "error");
-      }
-    } catch (e) {
-      this.setButtonLoading(btn, false, "Entrar no Painel");
-      this.showToast("Erro ao tentar autenticar.", "error");
-    }
-  },
-
-  // ==========================================================================
-  // CARREGAMENTO E ATUALIZAÇÃO DE DADOS
-  // ==========================================================================
-  async loadAdminData() {
-    if (!this.adminPassword) return;
-
-    try {
-      const res = await Api.adminGetData(this.adminPassword);
-      if (res.success) {
-        this.data = res;
-        this.showView("dashboard");
-        this.renderMetrics();
-        this.renderParticipantsTable();
-        this.renderBolaoGamesList();
-        this.renderPixConfig();
-        this.updateBolaoBanner(res.config);
-      } else {
-        this.showToast(res.error || "Falha ao carregar dados do painel.", "error");
-        this.logout();
-      }
-    } catch (e) {
-      this.showToast("Erro de comunicação com o servidor.", "error");
-    }
-  },
-
-  refreshData: function() {
-    this.loadAdminData();
-    this.showToast("Dados atualizados!", "info");
-  },
-
-  // Atualiza o banner de status do bolão
-  updateBolaoBanner: function(config) {
-    if (!config) return;
-    const statusBolao = config.StatusBolao || "Aberto";
-    const regLoteria = config.RegistroLoteria === "true" || config.RegistroLoteria === true;
-    const isFechado = statusBolao === "Fechado";
-
-    const labelStatus = document.getElementById("adminStatusBolaoLabel");
-    const labelLot = document.getElementById("adminRegistroLotLabel");
-    const btnClose = document.getElementById("btnCloseBolao");
-    const btnReopen = document.getElementById("btnReopenBolao");
-    const btnLottery = document.getElementById("btnConfirmLottery");
-
-    if (labelStatus) {
-      if (isFechado) {
-        labelStatus.className = "status-badge status-pendente";
-        labelStatus.textContent = "🔒 Fechado";
-      } else {
-        labelStatus.className = "status-badge status-pago";
-        labelStatus.textContent = "🟢 Aberto";
-      }
-    }
-
-    if (labelLot) {
-      labelLot.textContent = regLoteria ? "✅ Jogos registrados na loteria" : "⏳ Aguardando registro na loteria";
-    }
-
-    if (btnClose) btnClose.style.display = isFechado ? "none" : "inline-flex";
-    if (btnReopen) btnReopen.style.display = isFechado ? "inline-flex" : "none";
-    if (btnLottery) btnLottery.style.display = regLoteria ? "none" : "inline-flex";
-  },
-
-  // Fechar bolão
-  async closeBolao() {
-    if (!confirm("Fechar o bolão? Novos cadastros e confirmações de pagamento serão bloqueados. O status de registro na loteria NÃO será alterado.")) return;
-    try {
-      const res = await Api.adminCloseBolao(this.adminPassword);
-      if (res.success) {
-        this.showToast("Bolão fechado com sucesso!", "success");
-        if (this.data && this.data.config) {
-          this.data.config.StatusBolao = "Fechado";
-          this.updateBolaoBanner(this.data.config);
-        }
-      } else {
-        this.showToast(res.error || "Erro ao fechar bolão.", "error");
-      }
-    } catch (e) {
-      this.showToast("Falha de comunicação.", "error");
-    }
-  },
-
-  // Reabrir bolão
-  async reopenBolao() {
-    if (!confirm("Reabrir o bolão? Novos cadastros e confirmações de pagamento serão liberados novamente.")) return;
-    try {
-      const res = await Api.adminOpenBolao(this.adminPassword);
-      if (res.success) {
-        this.showToast("Bolão reaberto com sucesso!", "success");
-        if (this.data && this.data.config) {
-          this.data.config.StatusBolao = "Aberto";
-          this.updateBolaoBanner(this.data.config);
-        }
-      } else {
-        this.showToast(res.error || "Erro ao reabrir bolão.", "error");
-      }
-    } catch (e) {
-      this.showToast("Falha de comunicação.", "error");
-    }
-  },
-
-  // Confirmar registro na loteria
-  async confirmLottery() {
-    if (!confirm("Confirmar o registro dos jogos na Loteria Federal? Isso irá fechar o bolão automaticamente e notificar que os jogos foram registrados. Esta ação não pode ser desfeita facilmente.")) return;
-    try {
-      const res = await Api.adminConfirmLottery(this.adminPassword);
-      if (res.success) {
-        this.showToast("Registro na loteria confirmado! Participantes serão notificados.", "success");
-        if (this.data && this.data.config) {
-          this.data.config.StatusBolao = "Fechado";
-          this.data.config.RegistroLoteria = "true";
-          this.updateBolaoBanner(this.data.config);
-        }
-      } else {
-        this.showToast(res.error || "Erro ao confirmar registro.", "error");
-      }
-    } catch (e) {
-      this.showToast("Falha de comunicação.", "error");
-    }
-  },
-
-  // ==========================================================================
-  // MÉTRICAS GERAIS
-  // ==========================================================================
-  renderMetrics: function() {
-    if (!this.data) return;
-
-    const parts = this.data.participants || [];
-    const total = parts.length;
-    const paid = parts.filter(p => (p.paymentStatus || "").toLowerCase() === "pago").length;
-    const pending = total - paid;
-    // Cada cota paga tem R$ 15,00 para o fundo de super jogos
-    const poolFundValue = paid * 15.00;
-
-    document.getElementById("metricTotalParticipants").textContent = total;
-    document.getElementById("metricPaidParticipants").textContent = paid;
-    document.getElementById("metricPendingParticipants").textContent = pending;
-    document.getElementById("metricPoolFund").textContent = `R$ ${poolFundValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
-    document.getElementById("participantsCountBadge").textContent = `${total} cadastrados`;
-  },
-
-  // ==========================================================================
-  // ABA 1: TABELA DE PARTICIPANTES & BAIXAS
-  // ==========================================================================
-  renderParticipantsTable: function() {
-    if (!this.data) return;
-
-    const tbody = document.getElementById("adminParticipantsTableBody");
-    tbody.innerHTML = "";
-
-    const search = (document.getElementById("adminSearchInput")?.value || "").toLowerCase().trim();
-    const statusFilter = document.getElementById("adminStatusFilter")?.value || "todos";
-
-    let parts = [...(this.data.participants || [])];
-
-    // Filtragem
-    if (search) {
-      parts = parts.filter(p => 
-        (p.name || "").toLowerCase().includes(search) || 
-        (p.phone || "").includes(search)
-      );
-    }
-
-    if (statusFilter !== "todos") {
-      parts = parts.filter(p => (p.paymentStatus || "").toLowerCase() === statusFilter.toLowerCase());
-    }
-
-    if (parts.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-            Nenhum participante encontrado com os filtros selecionados.
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    parts.forEach(p => {
-      const isPaid = (p.paymentStatus || "").toLowerCase() === "pago";
-      const tr = document.createElement("tr");
-
-      tr.innerHTML = `
-        <td><strong>${this.escapeHtml(p.name)}</strong></td>
-        <td>${this.formatPhone(p.phone)}</td>
-        <td>${p.birthdate || "-"}</td>
-        <td>
-          <span style="font-weight: 700; color: ${p.gamesCount >= 5 ? 'var(--gold-primary)' : 'var(--text-muted)'};">
-            ${p.gamesCount || 0} jogos
-          </span>
-        </td>
-        <td>
-          <span class="status-badge ${isPaid ? 'status-pago' : 'status-pendente'}">
-            ${isPaid ? 'Pago' : 'Pendente'}
-          </span>
-        </td>
-        <td style="text-align: center;">
-          <div style="display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap;">
-            <button type="button" class="btn ${isPaid ? 'btn-secondary' : 'btn-success'}" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" onclick="AdminApp.togglePaymentStatus('${p.id}', '${isPaid ? 'Pendente' : 'Pago'}')">
-              ${isPaid ? '↩ Voltar Pendente' : '✓ Dar Baixa (Pago)'}
-            </button>
-            <button type="button" class="btn btn-outline-gold" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;" onclick="AdminApp.viewParticipantGames('${p.id}')">
-              👁️ Jogos
-            </button>
-          </div>
-        </td>
-      `;
-
-      tbody.appendChild(tr);
-    });
-  },
-
-  filterParticipants: function() {
-    this.renderParticipantsTable();
-  },
-
-  async togglePaymentStatus(participantId, newStatus) {
-    try {
-      const res = await Api.adminUpdatePayment(this.adminPassword, participantId, newStatus);
-      if (res.success) {
-        this.showToast(`Status atualizado para ${newStatus}!`, "success");
-        // Atualiza no cache local e re-renderiza
-        const p = this.data.participants.find(item => item.id === participantId);
-        if (p) p.paymentStatus = newStatus;
-        this.renderMetrics();
-        this.renderParticipantsTable();
-      } else {
-        this.showToast(res.error || "Erro ao atualizar status.", "error");
-      }
-    } catch (e) {
-      this.showToast("Falha ao comunicar com o servidor.", "error");
-    }
-  },
-
-  viewParticipantGames: function(participantId) {
-    const p = this.data.participants.find(item => item.id === participantId);
-    if (!p) return;
-
-    document.getElementById("modalParticipantName").textContent = `Jogos de ${p.name}`;
-    const modalContent = document.getElementById("modalGamesContent");
-    modalContent.innerHTML = "";
-
-    if (p.games && p.games.length > 0) {
-      p.games.forEach((g, idx) => {
-        const card = document.createElement("div");
-        card.className = "game-card";
-        card.innerHTML = `
-          <div class="game-card-header"><strong>Jogo #${g.jogoNumero || idx + 1}</strong></div>
-          <div class="selected-balls-row">
-            ${g.dezenas.split(",").map(n => `<span class="ball-tag">${n.trim()}</span>`).join("")}
-          </div>
-        `;
-        modalContent.appendChild(card);
-      });
-    } else {
-      modalContent.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 1rem;">Nenhum jogo registrado por este participante ainda.</p>`;
-    }
-
-    const modal = document.getElementById("modalParticipantGames");
-    modal.style.display = "flex";
-  },
-
-  closeGamesModal: function() {
-    document.getElementById("modalParticipantGames").style.display = "none";
-  },
-
-  // ==========================================================================
-  // ABA 2: CADASTRO DE JOGO OFICIAL (6, 7, 8 OU 9 DEZENAS)
-  // ==========================================================================
-  renderAdminLotteryGrid: function() {
-    const container = document.getElementById("adminLotteryGrid");
-    if (!container) return;
-
-    container.innerHTML = "";
-    for (let i = 1; i <= 60; i++) {
-      const ball = document.createElement("button");
-      ball.type = "button";
-      ball.className = "ball-btn";
-      ball.id = `admin-ball-${i}`;
-      ball.textContent = i < 10 ? `0${i}` : `${i}`;
-      ball.onclick = () => this.toggleAdminBall(i);
-      container.appendChild(ball);
-    }
-  },
-
-  setGameSize: function(size) {
-    this.targetGameSize = size;
-    // Atualiza botões de seleção de tamanho
-    document.querySelectorAll(".game-size-btn").forEach(btn => {
-      const bSize = Number(btn.getAttribute("data-size"));
-      btn.classList.toggle("active", bSize === size);
-      btn.classList.toggle("btn-outline-gold", bSize === size);
-      btn.classList.toggle("btn-secondary", bSize !== size);
-    });
-
-    document.getElementById("adminTargetCount").textContent = size;
-
-    // Se a seleção atual ultrapassa o novo tamanho, corta
-    if (this.adminSelectedBalls.length > size) {
-      this.adminSelectedBalls = this.adminSelectedBalls.slice(0, size);
-    }
-
-    this.updateAdminSelectionUI();
-  },
-
-  toggleAdminBall: function(num) {
-    const idx = this.adminSelectedBalls.indexOf(num);
-    if (idx !== -1) {
-      this.adminSelectedBalls.splice(idx, 1);
-    } else {
-      if (this.adminSelectedBalls.length >= this.targetGameSize) {
-        this.showToast(`Limite de ${this.targetGameSize} dezenas atingido para este formato.`, "info");
-        return;
-      }
-      this.adminSelectedBalls.push(num);
-    }
-
-    this.adminSelectedBalls.sort((a, b) => a - b);
-    this.updateAdminSelectionUI();
-  },
-
-  updateAdminSelectionUI: function() {
-    const count = this.adminSelectedBalls.length;
-    document.getElementById("adminSelectedCount").textContent = count;
-    document.getElementById("adminTargetCount").textContent = this.targetGameSize;
-
-    // Atualiza barra de resumo
-    const row = document.getElementById("adminSelectedBallsRow");
-    row.innerHTML = "";
-
-    for (let i = 0; i < this.targetGameSize; i++) {
-      const tag = document.createElement("span");
-      if (i < count) {
-        const n = this.adminSelectedBalls[i];
-        tag.className = "ball-tag" + (this.targetGameSize > 6 ? "" : " ball-admin");
-        tag.textContent = n < 10 ? `0${n}` : `${n}`;
-      } else {
-        tag.className = "ball-tag empty";
-        tag.textContent = "-";
-      }
-      row.appendChild(tag);
-    }
-
-    // Atualiza botões da grade
-    const isFull = count >= this.targetGameSize;
-    for (let i = 1; i <= 60; i++) {
-      const ball = document.getElementById(`admin-ball-${i}`);
-      if (ball) {
-        const isSelected = this.adminSelectedBalls.includes(i);
-        ball.classList.toggle("selected", isSelected);
-        ball.disabled = isFull && !isSelected;
-      }
-    }
-
-    const btnSave = document.getElementById("btnAdminSaveGame");
-    btnSave.disabled = count !== this.targetGameSize;
-  },
-
-  pickRandomNumbers: function() {
-    const target = this.targetGameSize;
-    const current = [...(this.adminSelectedBalls || [])];
-    const needed = target - current.length;
-
-    if (needed <= 0) {
-      this.showToast(`Já foram selecionadas todas as ${target} dezenas!`, "info");
-      return;
-    }
-
-    const picked = [...current];
-    while (picked.length < target) {
-      const r = Math.floor(Math.random() * 60) + 1;
-      if (!picked.includes(r)) picked.push(r);
-    }
-    picked.sort((a, b) => a - b);
-    this.adminSelectedBalls = picked;
-    this.updateAdminSelectionUI();
-    if (current.length > 0) {
-      this.showToast(`Jogo completado com mais ${needed} dezena(s) pela Surpresinha!`, "info");
-    } else {
-      this.showToast(`${target} dezenas geradas via Surpresinha!`, "info");
-    }
-  },
-
-  clearSelection: function() {
-    this.adminSelectedBalls = [];
-    this.updateAdminSelectionUI();
-  },
-
-  async saveOfficialGame() {
-    if (this.adminSelectedBalls.length !== this.targetGameSize) {
-      this.showToast(`Selecione exatamente ${this.targetGameSize} dezenas.`, "error");
-      return;
-    }
-
-    const btn = document.getElementById("btnAdminSaveGame");
-    this.setButtonLoading(btn, true, "Salvando jogo oficial...");
-
-    try {
-      const res = await Api.adminAddGame(this.adminPassword, this.adminSelectedBalls);
-      this.setButtonLoading(btn, false, "💾 Salvar Jogo Oficial do Bolão");
-
-      if (res.success) {
-        this.showToast(`Super jogo de ${this.targetGameSize} dezenas salvo com sucesso!`, "success");
-        this.clearSelection();
-        this.loadAdminData();
-        this.switchTab("bolaoList");
-      } else {
-        this.showToast(res.error || "Erro ao salvar jogo do bolão.", "error");
-      }
-    } catch (e) {
-      this.setButtonLoading(btn, false, "💾 Salvar Jogo Oficial do Bolão");
-      this.showToast("Erro ao comunicar com o servidor.", "error");
-    }
-  },
-
-  // ==========================================================================
-  // ABA 3: LISTA DE JOGOS OFICIAIS DO BOLÃO
-  // ==========================================================================
-  renderBolaoGamesList: function() {
-    const container = document.getElementById("adminBolaoListContainer");
-    if (!container) return;
-
-    container.innerHTML = "";
-    const games = this.data.bolaoGames || [];
-
-    if (games.length === 0) {
-      container.innerHTML = `
-        <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
-          Nenhum jogo oficial cadastrado ainda. Use a aba "Cadastrar Jogo Oficial" para adicionar jogos de 6 a 9 dezenas!
-        </div>
-      `;
-      return;
-    }
-
-    games.forEach((g, idx) => {
-      const isSuper = Number(g.qtdDezenas) > 6;
-      const card = document.createElement("div");
-      card.className = isSuper ? "super-game-card" : "game-card";
-
-      const header = document.createElement("div");
-      header.className = "game-card-header";
-      header.innerHTML = `
-        <div>
-          <strong>Jogo Oficial #${idx + 1} (${g.qtdDezenas} dezenas)</strong>
-          <span class="badge ${isSuper ? 'badge-gold' : 'badge-green'}" style="margin-left: 0.5rem;">
-            ${isSuper ? '★ SUPER APOSTA ★' : 'Aposta Oficial'}
-          </span>
-        </div>
-        <button type="button" class="btn btn-danger" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="AdminApp.deleteOfficialGame('${g.id}')">
-          🗑️ Excluir
-        </button>
-      `;
-
-      const ballsRow = document.createElement("div");
-      ballsRow.className = "selected-balls-row";
-      const nums = (g.dezenas || "").split(",").map(s => s.trim());
-      nums.forEach(n => {
-        const ball = document.createElement("span");
-        ball.className = "ball-tag" + (isSuper ? "" : " ball-admin");
-        ball.textContent = n;
-        ballsRow.appendChild(ball);
-      });
-
-      card.appendChild(header);
-      card.appendChild(ballsRow);
-      container.appendChild(card);
-    });
-  },
-
-  async deleteOfficialGame(gameId) {
-    if (!confirm("Tem certeza que deseja excluir este jogo oficial do bolão?")) {
-      return;
-    }
-
-    try {
-      const res = await Api.adminDeleteGame(this.adminPassword, gameId);
-      if (res.success) {
-        this.showToast("Jogo excluído com sucesso.", "info");
-        this.loadAdminData();
-      } else {
-        this.showToast(res.error || "Erro ao excluir jogo.", "error");
-      }
-    } catch (e) {
-      this.showToast("Falha de comunicação.", "error");
-    }
-  },
-
-  // ==========================================================================
-  // CONFIGURAÇÃO DO PIX
-  // ==========================================================================
-  renderPixConfig: function() {
-    if (!this.data || !this.data.config) return;
-    const cfg = this.data.config;
-    const keyInput = document.getElementById("cfgPixKey");
-    const typeSelect = document.getElementById("cfgPixType");
-    const nameInput = document.getElementById("cfgPixName");
-    const emailInput = document.getElementById("cfgNotificationEmail");
-
-    if (keyInput) keyInput.value = cfg.pixKey || "";
-    if (typeSelect) typeSelect.value = cfg.pixTipo || "E-mail";
-    if (nameInput) nameInput.value = cfg.pixNome || "";
-    if (emailInput) emailInput.value = cfg.notificationEmail || "";
-  },
-
-  async savePixConfig(event) {
-    event.preventDefault();
-    const keyInput = document.getElementById("cfgPixKey");
-    const typeSelect = document.getElementById("cfgPixType");
-    const nameInput = document.getElementById("cfgPixName");
-    const emailInput = document.getElementById("cfgNotificationEmail");
-    const btn = document.getElementById("btnSavePixConfig");
-
-    const pixKey = (keyInput ? keyInput.value : "").trim();
-    const pixTipo = typeSelect ? typeSelect.value : "E-mail";
-    const pixNome = (nameInput ? nameInput.value : "").trim();
-    const notificationEmail = (emailInput ? emailInput.value : "").trim();
-
-    if (!pixKey) {
-      this.showToast("Informe a chave PIX.", "error");
-      return;
-    }
-
-    this.setButtonLoading(btn, true, "Salvando configurações...");
-
-    try {
-      const res = await Api.adminSavePixConfig(this.adminPassword, {
-        pixKey,
-        pixTipo,
-        pixNome,
-        notificationEmail
-      });
-      this.setButtonLoading(btn, false, "💾 Salvar Configurações (PIX & Notificações)");
-
-      if (res.success) {
-        this.showToast("Configurações atualizadas com sucesso!", "success");
-        if (this.data && this.data.config) {
-          this.data.config.pixKey = pixKey;
-          this.data.config.pixTipo = pixTipo;
-          this.data.config.pixNome = pixNome;
-          this.data.config.notificationEmail = notificationEmail;
-        }
-      } else {
-        this.showToast(res.error || "Erro ao salvar configurações.", "error");
-      }
-    } catch (e) {
-      this.setButtonLoading(btn, false, "💾 Salvar Configurações (PIX & Notificações)");
-      this.showToast("Erro ao conectar ao servidor.", "error");
-    }
-  },
-
-  // ==========================================================================
-  // NAVEGAÇÃO DE ABAS ADMIN
-  // ==========================================================================
-  switchTab: function(tab) {
-    this.activeTab = tab;
-    document.getElementById("tabAdminParticipants").classList.toggle("active", tab === "participants");
-    document.getElementById("tabAdminNewGame").classList.toggle("active", tab === "newGame");
-    document.getElementById("tabAdminBolaoList").classList.toggle("active", tab === "bolaoList");
-    const tabConfig = document.getElementById("tabAdminConfig");
-    if (tabConfig) tabConfig.classList.toggle("active", tab === "config");
-
-    document.getElementById("secAdminParticipants").style.display = (tab === "participants") ? "block" : "none";
-    document.getElementById("secAdminNewGame").style.display = (tab === "newGame") ? "block" : "none";
-    document.getElementById("secAdminBolaoList").style.display = (tab === "bolaoList") ? "block" : "none";
-    const secConfig = document.getElementById("secAdminConfig");
-    if (secConfig) secConfig.style.display = (tab === "config") ? "block" : "none";
-
-    if (tab === "newGame") {
-      this.updateAdminSelectionUI();
-    } else if (tab === "config") {
-      this.renderPixConfig();
-    }
-  },
-
-  // ==========================================================================
-  // UTILITÁRIOS
-  // ==========================================================================
-  formatPhone: function(p) {
-    if (!p) return "-";
-    const clean = p.replace(/\D/g, "");
-    if (clean.length === 11) {
-      return `(${clean.substring(0, 2)}) ${clean.substring(2, 7)}-${clean.substring(7)}`;
-    }
-    return p;
-  },
-
-  escapeHtml: function(str) {
-    if (!str) return "";
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  },
-
-  setButtonLoading: function(btn, isLoading, text) {
-    if (!btn) return;
-    btn.disabled = isLoading;
-    if (isLoading) {
-      btn.innerHTML = `<span class="spinner"></span> <span>${text}</span>`;
-    } else {
-      btn.innerHTML = `<span>${text}</span>`;
-    }
-  },
-
-  showToast: function(message, type = "info") {
-    const container = document.getElementById("toastContainer");
-    if (!container) return;
-
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-
-    let icon = "ℹ️";
-    if (type === "success") icon = "✅";
-    if (type === "error") icon = "⚠️";
-
-    toast.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <span style="font-size: 1.2rem;">${icon}</span>
-        <span style="font-size: 0.9rem;">${message}</span>
-      </div>
-      <div>
-      <button style="background: none; border: none; color: white; cursor: pointer; font-size: 1rem;" onclick="this.parentElement.remove()">✕</button>
-    `;
-
-    container.appendChild(toast);
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translateX(100%)";
-      toast.style.transition = "all 0.3s ease";
-      setTimeout(() => toast.remove(), 300);
-    }, 4500);
-  },
-
-  // ============================================================================
-  // DOWNLOAD DE JOGOS
-  // ============================================================================
-
-  /**
-   * Coleta todos os jogos (bolão + participantes) e baixa como TXT.
-   * Formato: 02,07,15,23,28,50 (uma linha por jogo)
-   */
-  async downloadAllGamesTxt() {
-    this.showToast("Preparando arquivo TXT...", "info");
-    try {
-      const res = await Api.adminExportAllJSON(this.adminPassword);
-      if (!res.success) {
-        this.showToast(res.error || "Erro ao obter jogos.", "error");
-        return;
-      }
-      if (typeof PdfGenerator === "undefined") {
-        this.showToast("Módulo de geração não carregado. Recarregue a página.", "error");
-        return;
-      }
-      const games = res.games || [];
-      if (games.length === 0) {
-        this.showToast("Nenhum jogo cadastrado para exportar.", "error");
-        return;
-      }
-      PdfGenerator.downloadTxt(games);
-      this.showToast(`${games.length} jogo(s) exportado(s) para TXT com sucesso!`, "success");
-    } catch (e) {
-      this.showToast("Falha ao gerar TXT: " + e.message, "error");
-    }
-  },
-
-  /**
-   * Coleta todos os jogos e baixa como PDF.
-   */
-  async downloadAllGamesPDF() {
-    this.showToast("Gerando PDF com todos os jogos...", "info");
-    try {
-      const res = await Api.adminExportAllJSON(this.adminPassword);
-      if (!res.success) {
-        this.showToast(res.error || "Erro ao obter jogos.", "error");
-        return;
-      }
-      if (typeof PdfGenerator === "undefined" || typeof window.jspdf === "undefined") {
-        this.showToast("Módulo jsPDF não carregado. Recarregue a página.", "error");
-        return;
-      }
-      const games = res.games || [];
-      if (games.length === 0) {
-        this.showToast("Nenhum jogo cadastrado para exportar.", "error");
-        return;
-      }
-      setTimeout(() => {
-        PdfGenerator.generateAllGamesPdf(games, "Todos os Jogos do Bolão - Mega da Virada");
-        AdminApp.showToast(`PDF gerado com ${games.length} jogo(s)!`, "success");
-      }, 200);
-    } catch (e) {
-      this.showToast("Falha ao gerar PDF: " + e.message, "error");
-    }
-  }
-};
-
-// Registra Service Worker se suportado
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
-  });
+import { api } from "./api.js";
+import { COTA, DEZENAS_POR_JOGO, JOGOS_POR_PARTICIPANTE, TAMANHOS_JOGO_OFICIAL } from "./config.js";
+import { state, setAdminPassword, clearSession } from "./state.js";
+import { $, $$, showView, toast, notify, withLoading, confirmDialog, openDialog, gameCard, balls, empty, buildPicker, updatePicker } from "./ui.js";
+import { html, render, onlyDigits, pad2, formatPhone, formatBRL, toNumber, parseDezenas, completarAleatorio, downloadFile } from "./utils.js";
+import { gerarListaCompleta } from "./pdf.js";
+
+const isPago = (p) => String(p?.paymentStatus ?? "").toLowerCase() === "pago";
+const senha = () => state.adminPassword;
+const dados = () => state.admin.data ?? { participants: [], bolaoGames: [], config: {} };
+
+// ---------- Login / carregamento ----------
+
+export async function adminLogin(form) {
+  const password = form.elements.password.value.trim();
+  if (!password) return toast("Informe a senha do organizador.", "error");
+
+  const button = form.querySelector('[type="submit"]');
+  const res = await withLoading(button, () => api("adminLogin", { password }));
+  if (!res.success) return toast(res.message, "error");
+
+  setAdminPassword(password);
+  form.reset();
+  await withLoading(button, () => carregarAdmin());
 }
 
-document.addEventListener("DOMContentLoaded", () => AdminApp.init());
+/** Carrega o painel. Retorna true se deu certo. */
+export async function carregarAdmin(button) {
+  if (!senha()) return false;
+  const res = await withLoading(button, () => api("adminGetData", { password: senha() }));
+  if (!res.success) {
+    toast(res.message, "error");
+    if (/autorizad|senha/i.test(res.message ?? "")) sair(); // senha trocada na planilha
+    return false;
+  }
+
+  state.admin.data = {
+    participants: res.participants ?? [],
+    bolaoGames: res.bolaoGames ?? [],
+    config: res.config ?? {},
+  };
+  renderTudo();
+  showView("view-admin");
+  if (button) toast("Dados atualizados!", "success");
+  return true;
+}
+
+export function sair() {
+  clearSession();
+  showView("view-admin-login");
+}
+
+function renderTudo() {
+  renderStatus();
+  renderMetricas();
+  renderTabela();
+  renderOficiais();
+  renderConfig();
+  renderSeletorJogo();
+}
+
+// ---------- Status do bolão ----------
+
+function statusBolao() {
+  const c = dados().config;
+  return { fechado: c.StatusBolao === "Fechado", registrado: c.RegistroLoteria === true || c.RegistroLoteria === "true" };
+}
+
+function renderStatus() {
+  const { fechado, registrado } = statusBolao();
+  render($("#adm-status"), html`
+    <span class="badge ${fechado ? "badge--danger" : "badge--brand"}">${fechado ? "🔒 Fechado" : "🟢 Aberto"}</span>
+    <span class="badge ${registrado ? "badge--brand" : "badge--warn"}">${registrado ? "✅ Registrado na loteria" : "⏳ Aguardando registro"}</span>`);
+  $("[data-action='close-bolao']").hidden = fechado;
+  $("[data-action='open-bolao']").hidden = !fechado;
+  $("[data-action='confirm-lottery']").hidden = registrado;
+}
+
+async function alterarStatus(button, action, mensagem, opts) {
+  if (!(await confirmDialog(mensagem, opts))) return;
+  const res = await withLoading(button, () => api(action, { password: senha() }));
+  notify(res);
+  if (!res.success) return;
+  const cfg = dados().config;
+  if (res.StatusBolao) cfg.StatusBolao = res.StatusBolao;
+  if (res.RegistroLoteria) cfg.RegistroLoteria = res.RegistroLoteria;
+  renderStatus();
+}
+
+export const fecharBolao = (el) => alterarStatus(el, "adminCloseBolao",
+  "Novos cadastros e avisos de pagamento serão bloqueados. Quem não pagou deixa de participar. O status de registro na loteria não muda.",
+  { title: "Fechar o bolão?", okText: "Fechar bolão" });
+
+export const reabrirBolao = (el) => alterarStatus(el, "adminOpenBolao",
+  "Novos cadastros e avisos de pagamento serão liberados novamente.",
+  { title: "Reabrir o bolão?", okText: "Reabrir" });
+
+export const confirmarLoteria = (el) => alterarStatus(el, "adminConfirmLottery",
+  "Isso marca os jogos como registrados na loteria, fecha o bolão e avisa todos os participantes no painel.",
+  { title: "Confirmar registro na loteria?", okText: "Confirmar registro" });
+
+// ---------- Métricas ----------
+
+function valores() {
+  const total = toNumber(dados().config.valorTotal, COTA.total);
+  const jogos = JOGOS_POR_PARTICIPANTE * COTA.precoAposta;
+  return { total, fundo: Math.max(0, total - jogos) };
+}
+
+function renderMetricas() {
+  const { participants, bolaoGames } = dados();
+  const pagos = participants.filter(isPago).length;
+  const v = valores();
+  $("#m-total").textContent = participants.length;
+  $("#m-pagos").textContent = pagos;
+  $("#m-pendentes").textContent = participants.length - pagos;
+  $("#m-arrecadado").textContent = formatBRL(pagos * v.total);
+  $("#m-fundo").textContent = formatBRL(pagos * v.fundo);
+  $("#m-jogos").textContent = participants.filter(isPago).reduce((t, p) => t + (p.gamesCount || 0), 0) + bolaoGames.length;
+  $("#m-fundo-label").textContent = `Fundo (${formatBRL(v.fundo)}/cota)`;
+  $("#adm-qtd").textContent = `${participants.length} cadastrado(s)`;
+}
+
+// ---------- Participantes ----------
+
+export function renderTabela() {
+  const busca = $("#adm-busca").value.trim().toLowerCase();
+  const buscaDigitos = onlyDigits(busca);
+  const filtro = $("#adm-filtro").value;
+
+  const lista = dados().participants.filter((p) => {
+    if (filtro === "pago" && !isPago(p)) return false;
+    if (filtro === "pendente" && isPago(p)) return false;
+    if (!busca) return true;
+    return String(p.name).toLowerCase().includes(busca) || (buscaDigitos && onlyDigits(p.phone).includes(buscaDigitos));
+  });
+
+  render($("#adm-tabela"), lista.length
+    ? lista.map((p) => {
+      const pago = isPago(p);
+      const completo = (p.gamesCount || 0) >= JOGOS_POR_PARTICIPANTE;
+      return html`<tr>
+        <td style="min-width:170px"><strong>${p.name}</strong><br><span class="xsmall muted" style="white-space:nowrap">${formatPhone(p.phone)}</span></td>
+        <td>${p.birthdate || "—"}</td>
+        <td><span class="badge ${completo ? "badge--brand" : ""}">${p.gamesCount || 0} de ${JOGOS_POR_PARTICIPANTE}</span></td>
+        <td><span class="badge ${pago ? "badge--brand" : "badge--warn"}">${pago ? "Pago" : "Pendente"}</span></td>
+        <td><div class="actions">
+          <button class="btn btn--sm ${pago ? "btn--outline" : "btn--primary"}" data-action="toggle-payment" data-id="${p.id}" data-status="${pago ? "Pendente" : "Pago"}">
+            ${pago ? "↩ Voltar p/ pendente" : "✓ Dar baixa"}</button>
+          <button class="btn btn--ghost btn--sm" data-action="view-games" data-id="${p.id}">👁️ Jogos</button>
+        </div></td>
+      </tr>`;
+    })
+    : html`<tr><td colspan="5" class="center muted">Nenhum participante encontrado.</td></tr>`);
+}
+
+export async function alternarPagamento(button) {
+  const { id, status } = button.dataset;
+  const p = dados().participants.find((x) => x.id === id);
+  if (!p) return;
+  if (status === "Pendente" && !(await confirmDialog(`Voltar o pagamento de ${p.name} para pendente?`, { title: "Desfazer baixa", okText: "Voltar p/ pendente" }))) return;
+
+  const res = await withLoading(button, () => api("adminUpdatePayment", { password: senha(), participantId: id, status }));
+  if (!res.success) return toast(res.message, "error");
+  p.paymentStatus = status;
+  toast(status === "Pago" ? `Baixa registrada para ${p.name}.` : `${p.name} voltou para pendente.`, "success");
+  renderMetricas();
+  renderTabela();
+}
+
+export function verJogos(button) {
+  const p = dados().participants.find((x) => x.id === button.dataset.id);
+  if (!p) return;
+  $("#jogos-titulo").textContent = `Jogos de ${p.name}`;
+  const jogos = [...(p.games ?? [])].sort((a, b) => (a.jogoNumero ?? a.gameNumber) - (b.jogoNumero ?? b.gameNumber));
+  render($("#jogos-lista"), jogos.length
+    ? jogos.map((g, i) => gameCard(parseDezenas(g.dezenas), `Jogo ${g.jogoNumero ?? g.gameNumber ?? i + 1}`, { size: "sm" }))
+    : empty("Este participante ainda não cadastrou jogos."));
+  openDialog("dialog-jogos");
+}
+
+// ---------- Jogos oficiais (6 a 9 dezenas) ----------
+
+export function setupSeletorJogo() {
+  buildPicker($("#adm-picker"), alternarDezena);
+  render($("#adm-tamanhos"), TAMANHOS_JOGO_OFICIAL.map((n) =>
+    html`<button type="button" class="tabs__btn" role="tab" data-action="game-size" data-size="${n}">${n > DEZENAS_POR_JOGO ? "⭐ " : ""}${n} dezenas</button>`));
+}
+
+export function definirTamanho(el) {
+  const tamanho = Number(el.dataset.size);
+  state.admin.tamanho = tamanho;
+  state.admin.selecionadas = state.admin.selecionadas.slice(0, tamanho);
+  renderSeletorJogo();
+}
+
+function alternarDezena(n) {
+  const { selecionadas, tamanho } = state.admin;
+  const i = selecionadas.indexOf(n);
+  if (i !== -1) selecionadas.splice(i, 1);
+  else if (selecionadas.length >= tamanho) return toast(`Limite de ${tamanho} dezenas para este formato.`, "info");
+  else selecionadas.push(n);
+  selecionadas.sort((a, b) => a - b);
+  renderSeletorJogo();
+}
+
+function renderSeletorJogo() {
+  const { selecionadas, tamanho } = state.admin;
+  const isSuper = tamanho > DEZENAS_POR_JOGO;
+  $$("#adm-tamanhos [data-size]").forEach((b) => b.setAttribute("aria-selected", String(Number(b.dataset.size) === tamanho)));
+  $("#adm-contador").textContent = `${selecionadas.length} de ${tamanho} dezenas marcadas`;
+  render($("#adm-selecao"), balls(selecionadas.map(pad2), { slots: tamanho, variant: isSuper ? "gold" : "" }));
+  $("#adm-picker").classList.toggle("picker--gold", isSuper);
+  updatePicker($("#adm-picker"), selecionadas, tamanho);
+  $("[data-action='save-official']").disabled = selecionadas.length !== tamanho;
+}
+
+export function surpresinha() {
+  const { selecionadas, tamanho } = state.admin;
+  if (selecionadas.length >= tamanho) return toast("Todas as dezenas já foram marcadas.", "info");
+  state.admin.selecionadas = completarAleatorio(selecionadas, tamanho);
+  renderSeletorJogo();
+}
+
+export function limparSelecao() {
+  state.admin.selecionadas = [];
+  renderSeletorJogo();
+}
+
+export async function salvarJogoOficial(button) {
+  const { selecionadas, tamanho } = state.admin;
+  if (selecionadas.length !== tamanho) return toast(`Marque exatamente ${tamanho} dezenas.`, "error");
+
+  const repetido = dados().bolaoGames.some((g) => parseDezenas(g.dezenas).join(",") === selecionadas.map(pad2).join(","));
+  if (repetido && !(await confirmDialog("Já existe um jogo oficial com exatamente essas dezenas. Cadastrar mesmo assim?", { title: "Jogo repetido" }))) return;
+
+  const res = await withLoading(button, () => api("adminAddGame", { password: senha(), dezenas: selecionadas }));
+  if (!res.success) return toast(res.message, "error");
+  toast(res.message || "Jogo oficial cadastrado!", "success");
+  if (res.game) dados().bolaoGames.push(res.game);
+  limparSelecao();
+  renderOficiais();
+  renderMetricas();
+  trocarAba("oficiais");
+}
+
+function renderOficiais() {
+  const jogos = dados().bolaoGames;
+  $("#adm-oficiais-qtd").textContent = jogos.length;
+  render($("#adm-oficiais"), jogos.length
+    ? jogos.map((g, i) => {
+      const dezenas = parseDezenas(g.dezenas);
+      return gameCard(dezenas, `Jogo oficial #${i + 1} · ${dezenas.length} dezenas`, {
+        size: "sm",
+        gold: dezenas.length > DEZENAS_POR_JOGO,
+        extra: html`<button class="btn btn--link xsmall" style="color:var(--danger)" data-action="delete-official" data-id="${g.id}">🗑️ Excluir</button>`,
+      });
+    })
+    : empty("Nenhum jogo oficial ainda. Use a aba “Novo jogo oficial” para cadastrar jogos de 6 a 9 dezenas."));
+}
+
+export async function excluirJogoOficial(button) {
+  if (!(await confirmDialog("Excluir este jogo oficial do bolão?", { title: "Excluir jogo", okText: "Excluir" }))) return;
+  const id = button.dataset.id;
+  const res = await withLoading(button, () => api("adminDeleteGame", { password: senha(), gameId: id }));
+  if (!res.success) return toast(res.message, "error");
+  toast(res.message || "Jogo excluído.", "success");
+  state.admin.data.bolaoGames = dados().bolaoGames.filter((g) => String(g.id) !== id);
+  renderOficiais();
+  renderMetricas();
+}
+
+// ---------- Exportação (TXT para registrar na loteria / PDF) ----------
+
+/**
+ * Junta os jogos dos participantes (do backend) com os jogos oficiais do bolão.
+ * Por padrão só entram participantes com pagamento confirmado.
+ */
+async function coletarJogos(button) {
+  const res = await withLoading(button, () => api("adminExportAllJSON", { password: senha() }));
+  if (!res.success) {
+    toast(res.message, "error");
+    return null;
+  }
+  const incluirPendentes = $("#exp-pendentes").checked;
+  const participantes = (res.games ?? [])
+    .filter((g) => incluirPendentes || isPago(g))
+    .map((g) => ({ ...g, oficial: false }));
+  const oficiais = dados().bolaoGames.map((g) => ({
+    participantName: `Bolão · ${parseDezenas(g.dezenas).length} dezenas`, dezenas: g.dezenas, oficial: true,
+  }));
+  const jogos = [...oficiais, ...participantes];
+  if (!jogos.length) {
+    toast(incluirPendentes ? "Nenhum jogo cadastrado para exportar." : "Nenhum jogo de participante pago para exportar.", "error");
+    return null;
+  }
+  return jogos;
+}
+
+export async function exportarTxt(button) {
+  const jogos = await coletarJogos(button);
+  if (!jogos) return;
+  downloadFile("jogos_loteria.txt", jogos.map((g) => parseDezenas(g.dezenas).join(",")).join("\n"));
+  toast(`${jogos.length} jogo(s) exportado(s) para TXT.`, "success");
+}
+
+export async function exportarPdf(button) {
+  const jogos = await coletarJogos(button);
+  if (!jogos) return;
+  try {
+    gerarListaCompleta(jogos);
+    toast(`PDF gerado com ${jogos.length} jogo(s).`, "success");
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
+// ---------- Configuração do PIX ----------
+
+function renderConfig() {
+  const c = dados().config;
+  const form = $("#form-adm-pix");
+  form.elements.pixKey.value = c.pixKey || "";
+  form.elements.pixTipo.value = c.pixTipo || "E-mail";
+  form.elements.pixNome.value = c.pixNome || "";
+  form.elements.notificationEmail.value = c.notificationEmail || "";
+}
+
+export async function salvarPix(form) {
+  const payload = {
+    pixKey: form.elements.pixKey.value.trim(),
+    pixTipo: form.elements.pixTipo.value,
+    pixNome: form.elements.pixNome.value.trim(),
+    notificationEmail: form.elements.notificationEmail.value.trim(),
+  };
+  if (!payload.pixKey) return toast("Informe a chave PIX.", "error");
+  if (payload.notificationEmail && !form.elements.notificationEmail.checkValidity()) return toast("E-mail de notificação inválido.", "error");
+
+  const res = await withLoading(form.querySelector('[type="submit"]'), () => api("adminSavePixConfig", { password: senha(), ...payload }));
+  notify(res, "Configurações salvas!");
+  if (res.success) Object.assign(dados().config, payload, res.config ?? {});
+}
+
+// ---------- Abas ----------
+
+export function trocarAba(nome) {
+  $$("[data-action='tab']").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === nome)));
+  $$("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== nome; });
+}
