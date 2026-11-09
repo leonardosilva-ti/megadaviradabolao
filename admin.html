@@ -2,330 +2,231 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-  <title>Administração - Bolão da Mega da Virada</title>
-  
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👑</text></svg>">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Organizador · Bolão da Mega da Virada</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#15803d">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#061c12">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Mega Bolão">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="js/admin-main.js"></script>
 </head>
 <body>
+  <div id="progress" class="progress" hidden></div>
 
-  <div id="toastContainer" class="toast-container"></div>
-
-  <!-- Cabeçalho -->
-  <header class="site-header">
-    <div class="site-badge" style="background: rgba(255, 215, 0, 0.2); border-color: #ffd700;">👑 Gestão & Organização</div>
-    <h1 class="site-title">Painel do Organizador</h1>
-    <p class="site-subtitle">Controle de Pagamentos e Cadastro dos Jogos Oficiais da Mega da Virada</p>
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a class="brand" href="./" aria-label="Voltar ao site do bolão">
+        <span class="brand__logo brand__logo--virada" aria-hidden="true">31</span>
+        <span>
+          <span class="brand__name">Mega da Virada</span><br>
+          <span class="brand__tag">Painel do organizador</span>
+        </span>
+      </a>
+      <nav class="header-actions">
+        <a class="btn btn--ghost btn--sm" href="./">← <span class="btn__text">Ver site</span></a>
+        <button class="btn btn--outline btn--sm" data-action="logout" data-show="admin" hidden>Sair</button>
+      </nav>
+    </div>
   </header>
 
-  <main class="container">
+  <main class="container stack-lg">
 
-    <!-- Banner Modo Mock -->
-    <div id="mockBanner" class="mock-banner" style="display: none;">
-      <span>⚙️ <strong>Modo Local / Demonstração</strong>: Acesso administrativo funcionando com senha padrão <code>adminmega2025</code>.</span>
+    <div id="demo-banner" class="notice notice--warn" hidden>
+      <span class="notice__icon" aria-hidden="true">⚙️</span>
+      <p><strong>Modo demonstração:</strong> dados salvos só neste navegador. Senha do organizador: <code id="demo-senha"></code>.</p>
     </div>
 
-    <!-- ====================================================================
-         TELA 1: LOGIN ADMINISTRATIVO
-         ==================================================================== -->
-    <section id="viewAdminLogin" class="card" style="max-width: 500px; margin: 0 auto;">
-      <div class="card-header">
-        <h2 class="card-title">🔐 Acesso Restrito</h2>
-      </div>
-      <p style="color: var(--text-muted); margin-bottom: 1.25rem;">
-        Insira a senha do organizador para gerenciar os participantes e cadastrar jogos.
-      </p>
-
-      <form id="formAdminLogin" onsubmit="AdminApp.handleLogin(event)">
-        <div class="form-group">
-          <label class="form-label" for="adminPassword">Senha de Administrador:</label>
-          <input type="password" id="adminPassword" class="form-input" placeholder="Digite sua senha..." required autocomplete="current-password">
+    <!-- ================= LOGIN ADMIN ================= -->
+    <section id="view-admin-login" class="view" data-view="guest">
+      <form id="form-admin-login" class="card narrow stack" novalidate>
+        <div>
+          <h1 class="page-title">Administração</h1>
+          <p class="page-subtitle small">Acesso restrito ao organizador do bolão.</p>
         </div>
-
-        <button type="submit" class="btn btn-primary btn-block" id="btnAdminLogin">
-          <span>Entrar no Painel</span>
-        </button>
+        <div class="field">
+          <label class="label" for="admin-pass">Senha do organizador</label>
+          <input class="input" id="admin-pass" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn--dark btn--block btn--lg">Entrar</button>
+        <a class="btn btn--ghost btn--block" href="./">← Voltar ao site</a>
       </form>
-
-      <div style="margin-top: 1.5rem; text-align: center;">
-        <a href="index.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">
-          ← Voltar para a página do participante
-        </a>
-      </div>
     </section>
 
-    <!-- ====================================================================
-         TELA 2: PAINEL ADMINISTRATIVO (LOGADO)
-         ==================================================================== -->
-    <div id="viewAdminDashboard" style="display: none;">
-
-      <!-- Barra Superior com Ações e Logout -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-        <a href="index.html" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">
-          ← Ver Página dos Participantes
-        </a>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button type="button" class="btn btn-secondary" onclick="AdminApp.refreshData()" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">
-            🔄 Atualizar Dados
-          </button>
-          <button type="button" class="btn btn-danger" onclick="AdminApp.logout()" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">
-            🚪 Sair
-          </button>
+    <!-- ================= PAINEL ADMIN ================= -->
+    <section id="view-admin" class="view stack-lg" data-view="admin" hidden>
+      <div class="row row--between row--wrap">
+        <div>
+          <h1 class="page-title">Painel do organizador</h1>
+          <p class="page-subtitle small">Pagamentos, jogos oficiais e configuração do bolão.</p>
         </div>
+        <button class="btn btn--outline btn--sm" data-action="refresh-admin">↻ Atualizar</button>
       </div>
 
-      <!-- Controle do Bolão -->
-      <div id="bolaoBanner" class="card" style="margin-bottom: 1.25rem; padding: 1rem 1.25rem; border-left: 5px solid var(--gold-primary);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-          <div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.25rem;">Status do Bolão</div>
-            <span id="adminStatusBolaoLabel" class="status-badge status-pago">🟢 Aberto</span>
-            <span id="adminRegistroLotLabel" style="margin-left: 0.75rem; font-size: 0.85rem; color: var(--text-muted);"></span>
+      <!-- Status do bolão -->
+      <div class="card stack-sm" style="border-color:var(--warn-border)">
+        <div class="row row--between row--wrap">
+          <div class="stack-sm">
+            <p class="section-title">Status do bolão</p>
+            <div class="row row--wrap" id="adm-status"></div>
           </div>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button type="button" id="btnCloseBolao" class="btn btn-danger" style="font-size: 0.85rem; padding: 0.5rem 1rem;" onclick="AdminApp.closeBolao()">
-              🔒 Fechar Bolão
-            </button>
-            <button type="button" id="btnReopenBolao" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem; display: none;" onclick="AdminApp.reopenBolao()">
-              🔓 Reabrir Bolão
-            </button>
-            <button type="button" id="btnConfirmLottery" class="btn btn-success" style="font-size: 0.85rem; padding: 0.5rem 1rem;" onclick="AdminApp.confirmLottery()">
-              ✅ Confirmar Registro na Loteria
-            </button>
+          <div class="row row--wrap">
+            <button class="btn btn--danger btn--sm" data-action="close-bolao">🔒 Fechar bolão</button>
+            <button class="btn btn--outline btn--sm" data-action="open-bolao" hidden>🔓 Reabrir bolão</button>
+            <button class="btn btn--primary btn--sm" data-action="confirm-lottery">✅ Confirmar registro na loteria</button>
           </div>
         </div>
       </div>
 
-      <!-- Métricas Resumo -->
-      <div class="admin-metrics-grid">
-        <div class="card admin-metric-card">
-          <div class="admin-metric-label">Total de Participantes</div>
-          <div class="admin-metric-value" style="color: #ffffff;" id="metricTotalParticipants">0</div>
-        </div>
-        <div class="card admin-metric-card">
-          <div class="admin-metric-label">Pagamentos Confirmados</div>
-          <div class="admin-metric-value" style="color: #34d399;" id="metricPaidParticipants">0</div>
-        </div>
-        <div class="card admin-metric-card">
-          <div class="admin-metric-label">Pagamentos Pendentes</div>
-          <div class="admin-metric-value" style="color: #fbbf24;" id="metricPendingParticipants">0</div>
-        </div>
-        <div class="card admin-metric-card">
-          <div class="admin-metric-label">Fundo p/ Super Jogos (R$ 15/cota)</div>
-          <div class="admin-metric-value" style="color: var(--gold-primary);" id="metricPoolFund">R$ 0,00</div>
-        </div>
+      <!-- Métricas -->
+      <div class="grid-stats">
+        <div class="card metric"><p class="metric__label">Participantes</p><p class="metric__value" id="m-total">0</p></div>
+        <div class="card metric"><p class="metric__label">Pagos</p><p class="metric__value text-brand" id="m-pagos">0</p></div>
+        <div class="card metric"><p class="metric__label">Pendentes</p><p class="metric__value" style="color:var(--warn)" id="m-pendentes">0</p></div>
+        <div class="card metric"><p class="metric__label">Arrecadado</p><p class="metric__value" id="m-arrecadado">R$ 0,00</p></div>
+        <div class="card metric"><p class="metric__label" id="m-fundo-label">Fundo</p><p class="metric__value" style="color:var(--gold)" id="m-fundo">R$ 0,00</p></div>
+        <div class="card metric"><p class="metric__label">Jogos a registrar</p><p class="metric__value" id="m-jogos">0</p></div>
       </div>
 
-      <!-- Abas de Navegação Admin -->
-      <div class="tabs-nav" style="margin-top: 1.5rem;">
-        <button type="button" class="tab-btn active" id="tabAdminParticipants" onclick="AdminApp.switchTab('participants')">
-          👥 Participantes & Baixas
-        </button>
-        <button type="button" class="tab-btn" id="tabAdminNewGame" onclick="AdminApp.switchTab('newGame')">
-          ➕ Cadastrar Jogo Oficial (6 a 9 dezenas)
-        </button>
-        <button type="button" class="tab-btn" id="tabAdminBolaoList" onclick="AdminApp.switchTab('bolaoList')">
-          ⭐ Jogos Oficiais Salvos
-        </button>
-        <button type="button" class="tab-btn" id="tabAdminConfig" onclick="AdminApp.switchTab('config')">
-          ⚙️ Configuração do PIX
-        </button>
+      <div class="tabs" role="tablist" aria-label="Seções do painel">
+        <button class="tabs__btn" role="tab" data-action="tab" data-tab="participantes">👥 Participantes</button>
+        <button class="tabs__btn" role="tab" data-action="tab" data-tab="novo">➕ Novo jogo oficial</button>
+        <button class="tabs__btn" role="tab" data-action="tab" data-tab="oficiais">⭐ Jogos oficiais &amp; exportação</button>
+        <button class="tabs__btn" role="tab" data-action="tab" data-tab="config">⚙️ PIX &amp; notificações</button>
       </div>
 
-      <!-- ABA 1: TABELA DE PARTICIPANTES & BAIXA NO PAGAMENTO -->
-      <section id="secAdminParticipants" class="card">
-        <div class="card-header">
-          <h2 class="card-title">👥 Participantes do Bolão</h2>
-          <span style="font-size: 0.85rem; color: var(--text-muted);" id="participantsCountBadge">0 cadastrados</span>
+      <!-- Participantes -->
+      <div class="stack" data-panel="participantes">
+        <div class="row row--between row--wrap">
+          <h2 class="card__title">Participantes <span class="badge" id="adm-qtd"></span></h2>
+          <div class="row" style="flex:1 1 320px;justify-content:flex-end">
+            <input class="input" id="adm-busca" type="search" placeholder="Buscar por nome ou celular" style="min-height:36px;flex:0 1 260px;min-width:0">
+            <select class="select" id="adm-filtro" style="min-height:36px;width:auto;flex:none">
+              <option value="todos">Todos</option>
+              <option value="pago">Pagos</option>
+              <option value="pendente">Pendentes</option>
+            </select>
+          </div>
         </div>
-
-        <!-- Filtro e Busca -->
-        <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
-          <input type="text" id="adminSearchInput" class="form-input" placeholder="Buscar por nome ou telefone..." style="flex: 2; min-width: 200px;" oninput="AdminApp.filterParticipants()">
-          <select id="adminStatusFilter" class="form-select" style="flex: 1; min-width: 150px;" onchange="AdminApp.filterParticipants()">
-            <option value="todos">Todos os Status</option>
-            <option value="Pago">Apenas Pagos</option>
-            <option value="Pendente">Apenas Pendentes</option>
-          </select>
-        </div>
-
-        <div class="table-responsive">
-          <table class="admin-table">
+        <div class="table-wrap">
+          <table class="table">
             <thead>
               <tr>
                 <th>Nome</th>
-                <th>Telefone</th>
-                <th>Data Nasc.</th>
+                <th>Nascimento</th>
                 <th>Jogos</th>
                 <th>Pagamento</th>
-                <th style="text-align: center;">Ações</th>
+                <th style="text-align:right">Ações</th>
               </tr>
             </thead>
-            <tbody id="adminParticipantsTableBody">
-              <!-- Preenchido via JS -->
-            </tbody>
+            <tbody id="adm-tabela"></tbody>
           </table>
         </div>
-      </section>
+      </div>
 
-      <!-- ABA 2: CADASTRO DE JOGOS OFICIAIS DO BOLÃO (6, 7, 8 OU 9 DEZENAS) -->
-      <section id="secAdminNewGame" class="card" style="display: none;">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">⭐ Cadastrar Jogo Oficial do Bolão</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">
-              Você pode registrar jogos com <strong>6, 7, 8 ou 9 dezenas</strong>. Jogos com mais de 6 números serão exibidos com destaque brilhante na tela de todos os participantes!
-            </p>
+      <!-- Novo jogo oficial -->
+      <div class="card stack" data-panel="novo" hidden>
+        <div>
+          <h2 class="card__title">Cadastrar jogo oficial do bolão</h2>
+          <p class="small muted">Jogos de 6 a 9 dezenas pagos com o fundo do grupo. Os de mais de 6 dezenas aparecem em destaque dourado para todos.</p>
+        </div>
+        <div class="tabs" id="adm-tamanhos" role="tablist" aria-label="Quantidade de dezenas"></div>
+        <div class="card card--flat stack-sm" style="padding:14px">
+          <div class="row row--between row--wrap">
+            <span class="small" id="adm-contador"></span>
+            <div class="row">
+              <button type="button" class="btn btn--outline btn--sm" data-action="admin-surpresinha">🎲 Surpresinha</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-action="admin-clear">🧹 Limpar</button>
+            </div>
           </div>
+          <div id="adm-selecao"></div>
         </div>
+        <div class="picker" id="adm-picker" role="group" aria-label="Volante com as dezenas de 01 a 60"></div>
+        <button class="btn btn--primary btn--block btn--lg" data-action="save-official">💾 Salvar jogo oficial</button>
+      </div>
 
-        <!-- Seletor do Tamanho da Aposta -->
-        <div class="form-group">
-          <label class="form-label">Quantidade de Dezenas deste Jogo:</label>
-          <div class="game-sizes-container">
-            <button type="button" class="btn btn-secondary game-size-btn" data-size="6" onclick="AdminApp.setGameSize(6)">
-              6 Dezenas (Simples)
-            </button>
-            <button type="button" class="btn btn-outline-gold game-size-btn active" data-size="7" onclick="AdminApp.setGameSize(7)">
-              ⭐ 7 Dezenas (Super Jogo)
-            </button>
-            <button type="button" class="btn btn-outline-gold game-size-btn" data-size="8" onclick="AdminApp.setGameSize(8)">
-              ⭐ 8 Dezenas (Super Jogo)
-            </button>
-            <button type="button" class="btn btn-outline-gold game-size-btn" data-size="9" onclick="AdminApp.setGameSize(9)">
-              ⭐ 9 Dezenas (Super Jogo)
-            </button>
+      <!-- Jogos oficiais + exportação -->
+      <div class="grid-2" data-panel="oficiais" hidden>
+        <article class="card">
+          <header class="card__header">
+            <h2 class="card__title">Jogos oficiais salvos</h2>
+            <span class="badge" id="adm-oficiais-qtd">0</span>
+          </header>
+          <div id="adm-oficiais" class="stack-sm scroll-y scroll-y--lg"></div>
+        </article>
+        <article class="card stack">
+          <header class="card__header" style="margin:0">
+            <h2 class="card__title">Exportar todos os jogos</h2>
+            <span class="card__icon" aria-hidden="true">📤</span>
+          </header>
+          <p class="small muted">Junta os jogos oficiais do bolão com os jogos dos participantes. O TXT tem um jogo por linha (ex.: <code>02,07,15,23,28,50</code>) para facilitar o registro na loteria.</p>
+          <label class="checkbox"><input type="checkbox" id="exp-pendentes"> Incluir participantes com pagamento pendente</label>
+          <div class="row row--wrap">
+            <button class="btn btn--dark grow" data-action="export-txt">📝 Baixar TXT</button>
+            <button class="btn btn--outline grow" data-action="export-pdf">📄 Baixar PDF</button>
           </div>
+        </article>
+      </div>
+
+      <!-- Configuração do PIX -->
+      <form id="form-adm-pix" class="card stack" style="max-width:640px" data-panel="config" novalidate hidden>
+        <header class="card__header" style="margin:0"><h2 class="card__title">PIX e notificações</h2><span class="card__icon" aria-hidden="true">🏦</span></header>
+        <div class="field">
+          <label class="label" for="cfg-pix">Chave PIX</label>
+          <input class="input mono" id="cfg-pix" name="pixKey" type="text" maxlength="120" placeholder="E-mail, CPF, celular ou chave aleatória" required>
+          <span class="hint">Exibida com botão de copiar para os participantes.</span>
         </div>
-
-        <!-- Resumo da Seleção Atual -->
-        <div class="selected-summary-bar">
-          <div class="selected-counter">
-            Selecionados: <strong id="adminSelectedCount">0</strong> de <strong id="adminTargetCount">7</strong> números
-          </div>
-          <div class="selected-balls-row" id="adminSelectedBallsRow">
-            <!-- Bolinhas selecionadas -->
-          </div>
-        </div>
-
-        <!-- Botões de Ação Rápida -->
-        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 1rem;">
-          <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="AdminApp.pickRandomNumbers()">
-            🎲 Surpresinha (Completar)
-          </button>
-          <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="AdminApp.clearSelection()">
-            🧹 Limpar
-          </button>
-        </div>
-
-        <!-- Grade de 60 Bolinhas -->
-        <div class="lottery-grid" id="adminLotteryGrid">
-          <!-- Gerado via JS: 1 a 60 -->
-        </div>
-
-        <button type="button" class="btn btn-success btn-block" id="btnAdminSaveGame" onclick="AdminApp.saveOfficialGame()">
-          💾 Salvar Jogo Oficial do Bolão
-        </button>
-      </section>
-
-      <!-- ABA 3: LISTA DE JOGOS OFICIAIS CADASTRADOS -->
-      <section id="secAdminBolaoList" class="card" style="display: none;">
-        <div class="card-header">
-          <h2 class="card-title">⭐ Jogos Oficiais do Bolão Cadastrados</h2>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button type="button" class="btn btn-secondary" style="font-size:0.8rem; padding:0.35rem 0.8rem;" onclick="AdminApp.downloadAllGamesTxt()">
-              📝 Baixar TXT (Loterias)
-            </button>
-            <button type="button" class="btn btn-secondary" style="font-size:0.8rem; padding:0.35rem 0.8rem;" onclick="AdminApp.downloadAllGamesPDF()">
-              📄 Baixar Todos (PDF)
-            </button>
-          </div>
-        </div>
-        <div id="adminBolaoListContainer">
-          <!-- Preenchido via JS -->
-        </div>
-      </section>
-
-      <!-- ABA 4: CONFIGURAÇÃO DO PIX -->
-      <section id="secAdminConfig" class="card" style="display: none;">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">⚙️ Configuração do Pagamento PIX</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">
-              Defina os dados da chave PIX que serão apresentados aos participantes para realizarem o pagamento de R$ 45,00.
-            </p>
-          </div>
-        </div>
-
-        <form id="formAdminPixConfig" onsubmit="AdminApp.savePixConfig(event)" style="max-width: 600px;">
-          <div class="form-group">
-            <label class="form-label" for="cfgPixKey">Chave PIX:</label>
-            <input type="text" id="cfgPixKey" class="form-input" placeholder="Ex: email@banco.com, CPF, Celular ou Chave Aleatória" required>
-            <p class="form-help">Esta chave será exibida com botão de copiar em 1 clique para os participantes.</p>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="cfgPixType">Tipo de Chave:</label>
-            <select id="cfgPixType" class="form-select">
+        <div class="grid-2" style="gap:12px">
+          <div class="field">
+            <label class="label" for="cfg-tipo">Tipo de chave</label>
+            <select class="select" id="cfg-tipo" name="pixTipo">
               <option value="E-mail">E-mail</option>
               <option value="CPF">CPF</option>
               <option value="CNPJ">CNPJ</option>
-              <option value="Telefone">Telefone / Celular</option>
-              <option value="Chave Aleatória">Chave Aleatória (EVP)</option>
+              <option value="Telefone">Telefone / celular</option>
+              <option value="Chave Aleatória">Chave aleatória</option>
             </select>
           </div>
-
-          <div class="form-group">
-            <label class="form-label" for="cfgPixName">Nome do Titular / Beneficiário:</label>
-            <input type="text" id="cfgPixName" class="form-input" placeholder="Ex: Carlos Eduardo Silva" required>
-            <p class="form-help">Nome que o participante verá ao confirmar o PIX no banco dele.</p>
+          <div class="field">
+            <label class="label" for="cfg-nome">Titular da conta</label>
+            <input class="input" id="cfg-nome" name="pixNome" type="text" maxlength="100" placeholder="Nome que aparece no banco">
           </div>
-
-          <div class="form-group" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-            <label class="form-label" for="cfgNotificationEmail">📬 E-mail para Receber Notificações:</label>
-            <input type="email" id="cfgNotificationEmail" class="form-input" placeholder="seu-email@gmail.com">
-            <p class="form-help">Você receberá um e-mail automático sempre que um participante se cadastrar ou informar o pagamento via PIX.</p>
-          </div>
-
-          <button type="submit" class="btn btn-primary" id="btnSavePixConfig">
-            💾 Salvar Configurações (PIX & Notificações)
-          </button>
-        </form>
-      </section>
-
-    </div>
-
+        </div>
+        <div class="field">
+          <label class="label" for="cfg-email">📬 E-mail para notificações</label>
+          <input class="input" id="cfg-email" name="notificationEmail" type="email" maxlength="120" placeholder="seu-email@gmail.com">
+          <span class="hint">Você recebe um e-mail a cada novo cadastro e a cada aviso de pagamento.</span>
+        </div>
+        <button type="submit" class="btn btn--dark">💾 Salvar configurações</button>
+      </form>
+    </section>
   </main>
 
-  <!-- Modal para visualização dos jogos de um participante específico -->
-  <div id="modalParticipantGames" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; display: none; align-items: center; justify-content: center; padding: 1rem;">
-    <div class="card" style="max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;">
-      <div class="card-header">
-        <h3 class="card-title" id="modalParticipantName">Jogos do Participante</h3>
-        <button type="button" class="btn btn-secondary" onclick="AdminApp.closeGamesModal()" style="padding: 0.3rem 0.7rem;">✕ Fechar</button>
-      </div>
-      <div id="modalGamesContent">
-        <!-- Renderizado dinamicamente -->
-      </div>
-    </div>
-  </div>
-
-  <footer class="site-footer">
-    <p>Painel Administrativo do Bolão • Mega da Virada</p>
+  <footer class="app-footer">
+    Painel do organizador · Bolão da Mega da Virada
   </footer>
 
-  <script src="js/config.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/pdfGenerator.js"></script>
-  <script src="js/admin.js"></script>
+  <!-- ================= DIÁLOGOS ================= -->
+  <dialog class="modal" id="dialog-jogos">
+    <div class="modal__header"><h3 class="modal__title" id="jogos-titulo">Jogos</h3></div>
+    <div class="modal__body stack-sm" id="jogos-lista"></div>
+    <div class="modal__footer"><button class="btn btn--outline" data-action="close-dialog">Fechar</button></div>
+  </dialog>
+
+  <dialog class="modal" id="dialog-confirm">
+    <div class="modal__header"><h3 class="modal__title" id="confirm-title">Confirmar</h3></div>
+    <div class="modal__body small" id="confirm-message"></div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" value="cancel" data-confirm="false">Cancelar</button>
+      <button class="btn btn--primary" value="ok" data-confirm="true" id="confirm-ok">Confirmar</button>
+    </div>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
 </body>
 </html>

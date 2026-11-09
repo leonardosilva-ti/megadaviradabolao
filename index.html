@@ -2,440 +2,297 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-  <title>Bolão da Mega da Virada - Família & Amigos</title>
-  
-  <!-- Favicon com Trevo da Sorte -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍀</text></svg>">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Bolão da Mega da Virada</title>
+  <meta name="description" content="Bolão da Mega da Virada da família e amigos: cadastro, escolha dos 5 jogos, pagamento via PIX e acompanhamento.">
+  <meta name="theme-color" content="#15803d">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#061c12">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="Mega Bolão">
-
-  <!-- Estilos -->
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
+  <div id="progress" class="progress" hidden></div>
 
-  <!-- Notificações Toast -->
-  <div id="toastContainer" class="toast-container"></div>
-
-  <!-- Cabeçalho Principal -->
-  <header class="site-header">
-    <div class="site-badge">🍀 Edição Especial 🍀</div>
-    <h1 class="site-title">Mega da Virada</h1>
-    <p class="site-subtitle" id="siteSubtitleText">Bolão da Família & Amigos • Sorteio 31/12</p>
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a class="brand" href="./" aria-label="Bolão da Mega da Virada - início">
+        <span class="brand__logo brand__logo--virada" aria-hidden="true">31</span>
+        <span>
+          <span class="brand__name">Mega da Virada</span><br>
+          <span class="brand__tag">Bolão da família &amp; amigos</span>
+        </span>
+      </a>
+      <nav class="header-actions">
+        <button class="btn btn--ghost btn--sm" data-action="open-dialog" data-dialog="dialog-regras">📜 <span class="btn__text">Regras</span></button>
+        <button class="btn btn--outline btn--sm" data-action="install">⬇️ <span class="btn__text">Instalar app</span></button>
+        <button class="btn btn--outline btn--sm" data-action="logout" data-show="user" hidden>Sair</button>
+      </nav>
+    </div>
   </header>
 
-  <main class="container">
+  <main class="container stack-lg">
 
-    <!-- Banner de Instalação do Aplicativo (Android / Desktop) -->
-    <div id="pwaInstallBanner" class="card" style="display: none; padding: 1rem 1.25rem; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(16, 124, 65, 0.3)); border: 1.5px solid var(--gold-primary); margin-bottom: 1.5rem; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <span style="font-size: 2rem;">📲</span>
+    <div id="demo-banner" class="notice notice--warn" hidden>
+      <span class="notice__icon" aria-hidden="true">⚙️</span>
+      <p><strong>Modo demonstração:</strong> os dados ficam salvos só neste navegador. Para usar a planilha, preencha <code>API_URL</code> em <code>js/config.js</code>.</p>
+    </div>
+
+    <!-- ================= LOGIN ================= -->
+    <section id="view-login" class="view stack-lg" data-view="guest">
+      <div class="notice notice--warn narrow">
+        <span class="notice__icon" aria-hidden="true">🍀</span>
         <div>
-          <strong style="color: #ffffff; font-size: 0.95rem;">Instalar Aplicativo no Celular</strong>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Acesse mais rápido direto da sua tela inicial como um app!</p>
+          <p><strong>Bem-vindo(a) ao bolão da Mega da Virada!</strong></p>
+          <p>Sorteio em <strong id="data-sorteio">31/12</strong>. Este é um bolão <strong>privado</strong> entre família e amigos, <strong>sem vínculo com a Caixa Econômica Federal</strong>.</p>
         </div>
       </div>
-      <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <button type="button" class="btn btn-primary" id="btnPwaInstall" style="padding: 0.45rem 1rem; font-size: 0.85rem;" onclick="App.installPwa()">
-          Instalar App
-        </button>
-        <button type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; padding: 0.3rem;" onclick="App.dismissPwaBanner()">✕</button>
-      </div>
-    </div>
 
-    <!-- Banner de Instalação para iPhone/iPad (Safari iOS) -->
-    <div id="iosInstallBanner" class="card" style="display: none; padding: 0.85rem 1.25rem; background: rgba(12, 43, 29, 0.9); border: 1px dashed var(--gold-primary); margin-bottom: 1.5rem; align-items: center; justify-content: space-between; gap: 0.75rem;">
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <span style="font-size: 1.6rem;">🍎</span>
-        <p style="font-size: 0.83rem; color: #fce183; margin: 0;">
-          Para instalar no iPhone: toque no ícone de <strong>Compartilhar (⎋)</strong> no Safari e selecione <strong>"Adicionar à Tela de Início"</strong>.
-        </p>
-      </div>
-      <button type="button" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem;" onclick="App.dismissIosBanner()">✕</button>
-    </div>
+      <div class="card narrow">
+        <h1 class="page-title">Área do participante</h1>
+        <p class="page-subtitle small">Entre com seu WhatsApp e data de nascimento.</p>
 
-    <!-- Banner de Modo Local/Demonstração -->
-    <div id="mockBanner" class="mock-banner" style="display: none;">
-      <span>⚙️ <strong>Modo Demonstração Ativo</strong>: Os dados estão sendo salvos localmente no seu navegador. Para conectar ao Google Sheets, configure o <code>js/config.js</code>.</span>
-    </div>
-
-    <!-- ====================================================================
-         TELA 1: ACESSO / CADASTRO (IDENTIFICAÇÃO)
-         ==================================================================== -->
-    <section id="viewAuth" class="card">
-      <div class="tabs-nav">
-        <button type="button" class="tab-btn active" id="tabBtnLogin" onclick="App.switchAuthTab('login')">
-          Já sou participante (Entrar)
-        </button>
-        <button type="button" class="tab-btn" id="tabBtnRegister" onclick="App.switchAuthTab('register')">
-          Primeiro Acesso (Cadastrar)
-        </button>
-      </div>
-
-      <!-- Formulário de Login -->
-      <form id="formLogin" onsubmit="App.handleLoginSubmit(event)">
-        <div class="form-group">
-          <label class="form-label" for="loginPhone">Número do WhatsApp / Celular:</label>
-          <input type="tel" id="loginPhone" class="form-input" placeholder="(11) 99999-9999" required autocomplete="tel">
-          <p class="form-help">Informe o telefone utilizado no cadastro.</p>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="loginBirthdate">Data de Nascimento:</label>
-          <input type="text" id="loginBirthdate" class="form-input" placeholder="DD/MM/AAAA" maxlength="10" required>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block" id="btnLoginSubmit">
-          <span>Acessar Meu Bolão</span>
-        </button>
-      </form>
-
-      <!-- Formulário de Cadastro -->
-      <form id="formRegister" onsubmit="App.handleRegisterSubmit(event)" style="display: none;">
-        <!-- Informativo do Bolão Privado e Regras da Cota -->
-        <div class="bolao-terms-box" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: var(--radius-md); padding: 1.15rem; margin-bottom: 1.25rem;">
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
-            <span style="font-size: 1.3rem;">ℹ️</span>
-            <strong style="color: var(--gold-primary); font-size: 0.98rem;">Aviso Importante: Como Funciona o Nosso Bolão</strong>
+        <form id="form-login" class="stack" novalidate style="margin-top:20px">
+          <div class="field">
+            <label class="label" for="login-phone">Celular (WhatsApp)</label>
+            <input class="input" id="login-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="(00) 00000-0000" data-mask="phone" required>
           </div>
-          
-          <p style="font-size: 0.88rem; color: #e2e8f0; line-height: 1.5; margin-bottom: 0.75rem;">
-            Este é um <strong>bolão privado e independente</strong> organizado entre familiares e amigos, e <strong>não possui vínculo nem é organizado pela Caixa Econômica Federal</strong>.
-          </p>
-
-          <div style="font-size: 0.86rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 0.75rem;">
-            O valor total da cota é de <strong>R$ 45,00</strong>, dividido da seguinte forma:
-            <ul style="margin: 0.5rem 0 0.5rem 1.25rem; padding: 0;">
-              <li style="margin-bottom: 0.35rem;">
-                <strong>R$ 30,00</strong> destinados aos seus <strong>5 jogos individuais</strong> (você escolhe suas próprias 6 dezenas para cada um deles).
-              </li>
-              <li>
-                <strong>R$ 15,00</strong> destinados ao fundo comum do grupo para registrar <strong>jogos especiais com mais números por aposta</strong> (apostas de 7, 8 ou 9 dezenas). A quantidade e o formato desses jogos dependerão do valor total arrecadado no bolão.
-              </li>
-            </ul>
+          <div class="field">
+            <label class="label" for="login-birthdate">Data de nascimento</label>
+            <div class="input-group">
+              <input class="input" id="login-birthdate" name="birthdate" type="text" inputmode="numeric" autocomplete="bday" placeholder="DD/MM/AAAA" maxlength="10" data-mask="date" required>
+              <button type="button" class="btn btn--outline btn--icon" data-action="open-calendar" data-target="login-birthdate" aria-label="Abrir calendário">📅</button>
+              <input type="date" class="date-proxy" data-proxy-for="login-birthdate" tabindex="-1" aria-hidden="true">
+            </div>
           </div>
+          <button type="submit" class="btn btn--primary btn--block btn--lg">Acessar meu bolão</button>
+        </form>
 
-          <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem;">
-            Todos os jogos registrados ficam disponíveis no painel para conferência transparente de todos os participantes.
-          </p>
+        <div class="stack-sm center" style="margin-top:20px">
+          <p class="small">Primeiro acesso? <button class="btn btn--link" data-action="go-register">Cadastre-se aqui</button></p>
+          <a class="btn btn--link small muted" href="admin.html">Acesso do organizador</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CADASTRO ================= -->
+    <section id="view-register" class="view" data-view="guest" hidden>
+      <form id="form-register" class="card stack" style="max-width:640px;margin-inline:auto" novalidate>
+        <div>
+          <p class="section-title">Primeiro acesso</p>
+          <h1 class="page-title">Cadastro no bolão</h1>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="regName">Seu Nome Completo:</label>
-          <input type="text" id="regName" class="form-input" placeholder="Ex: Maria da Silva" required autocomplete="name">
+        <div class="notice">
+          <span class="notice__icon" aria-hidden="true">ℹ️</span>
+          <div>
+            <p><strong>Como funciona o nosso bolão</strong></p>
+            <p>A cota é de <strong data-valor="total">R$ 45,00</strong>, dividida assim:</p>
+            <dl style="margin:6px 0 0">
+              <div class="kv"><dt>Seus 5 jogos individuais (5 × R$ 6,00) — você escolhe as 6 dezenas de cada um</dt><dd data-valor="jogos">R$ 30,00</dd></div>
+              <div class="kv"><dt>Fundo do grupo para <strong>jogos especiais de 7, 8 ou 9 dezenas</strong> (a quantidade depende do total arrecadado)</dt><dd data-valor="fundo">R$ 15,00</dd></div>
+            </dl>
+            <p>Todos os jogos registrados ficam disponíveis no painel para conferência de todos.</p>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="regPhone">Número do WhatsApp / Celular:</label>
-          <input type="tel" id="regPhone" class="form-input" placeholder="(11) 99999-9999" required autocomplete="tel">
-          <p class="form-help">Usado para identificar você e confirmar o pagamento.</p>
+        <div class="field">
+          <label class="label" for="reg-name">Nome completo</label>
+          <input class="input" id="reg-name" name="name" type="text" autocomplete="name" placeholder="Ex: Maria da Silva" maxlength="100" required>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label class="label" for="reg-phone">Celular (WhatsApp)</label>
+            <input class="input" id="reg-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="(00) 00000-0000" data-mask="phone" required>
+            <span class="hint">É seu login e usamos para confirmar o pagamento.</span>
+          </div>
+          <div class="field">
+            <label class="label" for="reg-birthdate">Data de nascimento</label>
+            <div class="input-group">
+              <input class="input" id="reg-birthdate" name="birthdate" type="text" inputmode="numeric" autocomplete="bday" placeholder="DD/MM/AAAA" maxlength="10" data-mask="date" required>
+              <button type="button" class="btn btn--outline btn--icon" data-action="open-calendar" data-target="reg-birthdate" aria-label="Abrir calendário">📅</button>
+              <input type="date" class="date-proxy" data-proxy-for="reg-birthdate" tabindex="-1" aria-hidden="true">
+            </div>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="regBirthdate">Data de Nascimento:</label>
-          <input type="text" id="regBirthdate" class="form-input" placeholder="DD/MM/AAAA" maxlength="10" required>
-        </div>
+        <label class="checkbox">
+          <input type="checkbox" name="terms" required>
+          Li e aceito as regras e condições deste bolão privado.
+        </label>
 
-        <!-- Termo Li e Aceito -->
-        <div class="form-group" style="margin-top: 1rem; margin-bottom: 1.25rem;">
-          <label style="display: flex; align-items: flex-start; gap: 0.65rem; cursor: pointer; font-size: 0.9rem; color: #f1f5f9; background: rgba(0,0,0,0.2); padding: 0.75rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.15);">
-            <input type="checkbox" id="regTermsAccepted" name="termsAccepted" required style="width: 1.25rem; height: 1.25rem; margin-top: 0.1rem; accent-color: var(--gold-primary); cursor: pointer;">
-            <span>Li e aceito as regras e condições deste bolão privado.</span>
-          </label>
+        <div class="row row--between">
+          <button type="button" class="btn btn--ghost" data-action="go-login">← Voltar</button>
+          <button type="submit" class="btn btn--primary">Cadastrar e escolher jogos</button>
         </div>
-
-        <button type="submit" class="btn btn-success btn-block" id="btnRegisterSubmit">
-          <span>Cadastrar e Escolher Meus Jogos</span>
-        </button>
       </form>
     </section>
 
-    <!-- ====================================================================
-         TELA 2: WIZARD DE 5 JOGOS (SELEÇÃO DE 60 DEZENAS)
-         ==================================================================== -->
-    <section id="viewGamesWizard" class="card" style="display: none;">
-      <div class="card-header">
+    <!-- ================= ESCOLHA DOS 5 JOGOS ================= -->
+    <section id="view-wizard" class="view" data-view="user" hidden>
+      <div class="card stack" style="max-width:760px;margin-inline:auto">
         <div>
-          <h2 class="card-title">🍀 Seus 5 Palpites da Sorte</h2>
-          <p class="site-subtitle" id="wizardGreeting">Olá! Escolha exatamente 6 números para cada um dos 5 jogos.</p>
+          <p class="section-title">Seus palpites</p>
+          <h1 class="page-title" id="wizard-titulo">Jogo 1 de 5</h1>
+          <p class="page-subtitle small" id="wizard-greeting"></p>
         </div>
-      </div>
 
-      <!-- Barra de Progresso dos 5 Jogos -->
-      <div class="wizard-progress">
-        <div class="wizard-step-indicator active" onclick="App.goToStep(1)" id="stepInd1">
-          <div class="step-circle">1</div>
-          <span class="step-label">Jogo 1</span>
-        </div>
-        <div class="wizard-step-indicator" onclick="App.goToStep(2)" id="stepInd2">
-          <div class="step-circle">2</div>
-          <span class="step-label">Jogo 2</span>
-        </div>
-        <div class="wizard-step-indicator" onclick="App.goToStep(3)" id="stepInd3">
-          <div class="step-circle">3</div>
-          <span class="step-label">Jogo 3</span>
-        </div>
-        <div class="wizard-step-indicator" onclick="App.goToStep(4)" id="stepInd4">
-          <div class="step-circle">4</div>
-          <span class="step-label">Jogo 4</span>
-        </div>
-        <div class="wizard-step-indicator" onclick="App.goToStep(5)" id="stepInd5">
-          <div class="step-circle">5</div>
-          <span class="step-label">Jogo 5</span>
-        </div>
-      </div>
+        <nav class="steps" id="wizard-steps" aria-label="Jogos"></nav>
 
-      <!-- Barra de visualização das dezenas selecionadas no jogo atual -->
-      <div class="selected-summary-bar">
-        <div class="selected-counter" id="stepCounterText">
-          Jogo <strong>1 de 5</strong>: <span id="countSelectedBalls">0</span> de <strong>6</strong> números marcados
-        </div>
-        <div class="selected-balls-row" id="currentSelectedBallsRow">
-          <!-- Bolinhas marcadas preenchidas dinamicamente -->
-        </div>
-      </div>
-
-      <!-- Atalhos de conveniência -->
-      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 1rem;">
-        <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="App.pickRandomNumbers()">
-          🎲 Surpresinha (Completar / Gerar 6)
-        </button>
-        <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="App.clearCurrentGame()">
-          🧹 Limpar
-        </button>
-      </div>
-
-      <!-- Grade de 60 Bolinhas da Mega -->
-      <div class="lottery-grid" id="lotteryGrid60">
-        <!-- Gerado via JavaScript: 1 a 60 -->
-      </div>
-
-      <!-- Botões de Ação do Wizard -->
-      <div style="display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem;">
-        <button type="button" class="btn btn-secondary" id="btnPrevStep" onclick="App.prevStep()" style="display: none;">
-          ← Jogo Anterior
-        </button>
-        <button type="button" class="btn btn-primary" id="btnNextStep" onclick="App.nextStep()" style="margin-left: auto;">
-          <span>Próximo Jogo →</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- Modal / Revisão Geral dos 5 Jogos antes de enviar -->
-    <section id="viewGamesReview" class="card" style="display: none;">
-      <div class="card-header">
-        <h2 class="card-title">📋 Revisão dos seus 5 Jogos</h2>
-      </div>
-      <p style="color: var(--text-muted); margin-bottom: 1.25rem;">
-        Confira seus 5 palpites com atenção. Nenhum jogo pode ser idêntico ao outro.
-      </p>
-
-      <div id="reviewGamesList">
-        <!-- Preenchido via JS com os 5 jogos -->
-      </div>
-
-      <div style="display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
-        <button type="button" class="btn btn-secondary" onclick="App.backToWizard()" style="flex: 1;">
-          ✏️ Alterar Números
-        </button>
-        <button type="button" class="btn btn-success" id="btnConfirmAllGames" onclick="App.submitAllGames()" style="flex: 2;">
-          ✅ Confirmar e Ir para Pagamento
-        </button>
-      </div>
-    </section>
-
-    <!-- ====================================================================
-         TELA 3: PAGAMENTO PIX (R$ 45,00)
-         ==================================================================== -->
-    <section id="viewPayment" class="card" style="display: none;">
-      <div class="pix-container">
-        <div class="site-badge">💰 Quase Lá! Finalize sua Participação</div>
-        <h2 style="font-size: 1.6rem; margin-top: 0.5rem; color: #ffffff;">Pagamento da Participação</h2>
-        
-        <div class="pix-value-box">
-          <p style="font-size: 1rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">
-            Valor da Cota Individual
-          </p>
-          <div class="pix-price-tag">R$ 45,00</div>
-          
-          <!-- Explicação Transparente dos R$ 45,00 -->
-          <div class="pix-explanation-card">
-            <h4 style="color: var(--gold-primary); margin-bottom: 0.5rem; font-size: 0.95rem;">
-              ℹ️ Entenda como o seu valor de R$ 45,00 é dividido:
-            </h4>
-            <div class="pix-breakdown-item">
-              <span class="badge badge-gold">R$ 30,00</span>
-              <span>Paga os seus <strong>5 jogos individuais</strong> cadastrados (5 x R$ 6,00 da aposta simples da Mega-Sena).</span>
-            </div>
-            <div class="pix-breakdown-item">
-              <span class="badge badge-green">R$ 15,00</span>
-              <span>Vai para o <strong>fundo comunitário do bolão</strong> para fazermos jogos combinados maiores de <strong>7, 8 ou 9 números</strong>, aumentando exponencialmente as chances de vitória de todos!</span>
+        <div class="card card--flat stack-sm" style="padding:14px">
+          <div class="row row--between row--wrap">
+            <span class="small" id="wizard-contador">0 de 6 dezenas marcadas</span>
+            <div class="row">
+              <button type="button" class="btn btn--outline btn--sm" data-action="surpresinha">🎲 Surpresinha</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-action="clear-game">🧹 Limpar</button>
             </div>
           </div>
+          <div id="wizard-selecao"></div>
         </div>
 
-        <p style="color: var(--text-main); font-weight: 600; margin-bottom: 0.5rem;">
-          Faça a transferência via PIX para a chave abaixo:
-        </p>
+        <div class="picker" id="picker" role="group" aria-label="Volante com as dezenas de 01 a 60"></div>
+        <p class="hint">A surpresinha completa só as dezenas que faltam — as que você já marcou são mantidas.</p>
 
-        <div class="pix-key-display">
-          <div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); text-align: left;" id="pixKeyTypeLabel">Chave PIX:</div>
-            <div class="pix-key-text" id="pixKeyValue">carregando...</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left;" id="pixReceiverLabel">Beneficiário: ...</div>
-          </div>
-          <button type="button" class="btn btn-outline-gold" onclick="App.copyPixKey()" style="padding: 0.5rem 0.9rem; font-size: 0.85rem;">
-            📋 Copiar Chave
-          </button>
-        </div>
-
-        <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align: left;">
-          <p style="font-size: 0.9rem; color: #fde68a;">
-            ⚠️ <strong>Importante:</strong> Após realizar o PIX no aplicativo do seu banco, aperte no botão <strong>"Confirmar Pagamento"</strong> logo abaixo para registrar a sua participação e avisar a organização!
-          </p>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <button type="button" class="btn btn-success btn-block" id="btnConfirmPayment" onclick="App.confirmPayment()">
-            💳 Confirmar Pagamento Realizado
-          </button>
-          <button type="button" class="btn btn-secondary btn-block" onclick="App.openDashboard()">
-            Ir para o Painel do Participante →
-          </button>
+        <div class="row row--between">
+          <button type="button" class="btn btn--ghost" id="btn-prev-game" data-action="prev-game">← Jogo anterior</button>
+          <button type="button" class="btn btn--info" id="btn-next-game" data-action="next-game" style="margin-left:auto">Próximo jogo →</button>
         </div>
       </div>
     </section>
 
-    <!-- ====================================================================
-         TELA 4: PAINEL DO PARTICIPANTE (DASHBOARD)
-         ==================================================================== -->
-    <section id="viewDashboard" style="display: none;">
-      <!-- Card do Perfil e Status -->
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-          <div>
-            <div style="font-size: 0.85rem; color: var(--text-muted);">Bem-vindo(a) ao Bolão</div>
-            <h2 style="font-size: 1.5rem; color: #ffffff;" id="dashUserName">Participante</h2>
-            <div style="font-size: 0.85rem; color: var(--text-muted);" id="dashUserPhone">Telefone</div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem;">Status do Pagamento:</div>
-            <div id="dashPaymentBadge" class="status-badge status-pendente">
-              ⏳ Pagamento Pendente
-            </div>
-          </div>
+    <!-- ================= REVISÃO ================= -->
+    <section id="view-review" class="view" data-view="user" hidden>
+      <div class="card stack" style="max-width:640px;margin-inline:auto">
+        <div>
+          <p class="section-title">Quase lá</p>
+          <h1 class="page-title">Revise seus 5 jogos</h1>
+          <p class="page-subtitle small">Confira com atenção. Nenhum jogo pode ser igual a outro.</p>
         </div>
-
-        <div id="dashPaymentAlert" style="margin-top: 1rem; padding: 0.85rem 1rem; background: rgba(245, 158, 11, 0.15); border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-          <span style="font-size: 0.88rem; color: #fef3c7;" id="dashPaymentAlertMsg">
-            Seu pagamento de R$ 45,00 ainda está pendente de confirmação pelo organizador.
-          </span>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button type="button" class="btn btn-outline-gold" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" onclick="App.openPaymentScreen()">
-              Ver Chave Pix
-            </button>
-            <button type="button" class="btn btn-success" id="btnDashConfirmPayment" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;" onclick="App.confirmPaymentFromDashboard()">
-              ✓ Já paguei via Pix
-            </button>
-          </div>
-        </div>
-
-        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
-          <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="App.refreshDashboard()">
-            🔄 Atualizar Dados
-          </button>
-          <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="App.logout()">
-            🚪 Sair
-          </button>
-        </div>
-      </div>
-
-      <!-- Abas de visualização do Dashboard -->
-      <div class="tabs-nav">
-        <button type="button" class="tab-btn active" id="tabDashMyGames" onclick="App.switchDashTab('my')">
-          Meus 5 Jogos
-        </button>
-        <button type="button" class="tab-btn" id="tabDashBolaoGames" onclick="App.switchDashTab('bolao')">
-          ★ Super Jogos do Bolão
-        </button>
-        <button type="button" class="tab-btn" id="tabDashOtherGames" onclick="App.switchDashTab('others')">
-          Jogos dos Outros Participantes
-        </button>
-      </div>
-
-      <!-- Banner de Status do Registro na Loteria (renderizado via JS) -->
-      <div id="lotteryNotice" style="display:none;"></div>
-
-      <!-- Botão de download do comprovante -->
-      <div id="dashDownloadBar" style="display:none; margin-bottom: 1rem; text-align: right;">
-        <button type="button" class="btn btn-secondary" style="font-size:0.85rem; padding:0.4rem 0.9rem;" onclick="App.downloadMyReceiptPDF()">
-          📄 Baixar Comprovante (PDF)
-        </button>
-      </div>
-
-      <!-- Seção: Meus Jogos -->
-      <div id="dashSecMyGames" class="card">
-        <div class="card-header">
-          <h3 class="card-title">🎯 Seus Palpites Cadastrados</h3>
-          <span style="font-size: 0.85rem; color: var(--gold-primary);">5 apostas</span>
-        </div>
-        <div id="dashMyGamesList">
-          <!-- Renderizado via JS -->
-        </div>
-      </div>
-
-      <!-- Seção: Super Jogos Oficiais do Bolão (6 a 9 dezenas) -->
-      <div id="dashSecBolaoGames" class="card" style="display: none;">
-        <div class="card-header">
-          <div>
-            <h3 class="card-title">🌟 Jogos Especiais Feitos pela Administração</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">
-              Apostas com 7, 8 ou 9 dezenas financiadas pelo fundo comunitário de R$ 15,00 de cada membro!
-            </p>
-          </div>
-        </div>
-        <div id="dashBolaoGamesList">
-          <!-- Renderizado via JS -->
-        </div>
-      </div>
-
-      <!-- Seção: Jogos de Outros Participantes (Anônimo) -->
-      <div id="dashSecOtherGames" class="card" style="display: none;">
-        <div class="card-header">
-          <div>
-            <h3 class="card-title">👥 Todos os Jogos da Família & Amigos</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">
-              Total transparência: confira todas as dezenas apostadas no grupo (dados dos participantes mantidos em sigilo).
-            </p>
-          </div>
-        </div>
-        <div id="dashOtherGamesList">
-          <!-- Renderizado via JS -->
+        <div id="review-list" class="stack-sm"></div>
+        <div class="row row--between row--wrap">
+          <button type="button" class="btn btn--ghost" data-action="back-to-wizard">✏️ Alterar números</button>
+          <button type="button" class="btn btn--primary" data-action="submit-games">✅ Confirmar e ir para o pagamento</button>
         </div>
       </div>
     </section>
 
+    <!-- ================= PAGAMENTO PIX ================= -->
+    <section id="view-payment" class="view" data-view="user" hidden>
+      <div class="card card--brand stack narrow">
+        <div class="center stack-sm">
+          <p class="section-title">Valor da cota</p>
+          <p class="price" data-valor="total">R$ 45,00</p>
+        </div>
+
+        <dl style="margin:0">
+          <div class="kv"><dt>Seus 5 jogos individuais (5 × R$ 6,00)</dt><dd data-valor="jogos">R$ 30,00</dd></div>
+          <div class="kv"><dt>Fundo do grupo — jogos de 7, 8 ou 9 dezenas</dt><dd data-valor="fundo">R$ 15,00</dd></div>
+        </dl>
+
+        <div class="field">
+          <label class="label" for="pay-pix" id="pay-pix-label">Chave PIX</label>
+          <div class="input-group">
+            <input class="input mono" id="pay-pix" type="text" readonly>
+            <button class="btn btn--primary" data-action="copy-pix">Copiar</button>
+          </div>
+          <span class="hint" id="pay-titular"></span>
+        </div>
+
+        <div class="notice notice--warn small">
+          <span class="notice__icon" aria-hidden="true">⚠️</span>
+          <p>Depois de fazer o PIX no app do seu banco, toque em <strong>"Já paguei"</strong> para avisar o organizador.</p>
+        </div>
+
+        <p class="notice notice--success small" id="pay-status" hidden></p>
+
+        <div class="stack-sm">
+          <button class="btn btn--primary btn--block btn--lg" id="pay-confirmar" data-action="notify-payment">👉 Já paguei, avisar o organizador</button>
+          <button class="btn btn--ghost btn--block" data-action="go-dashboard">Ir para o meu painel →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PAINEL DO PARTICIPANTE ================= -->
+    <section id="view-dashboard" class="view stack-lg" data-view="user" hidden>
+      <div class="hero hero--virada">
+        <div class="row row--between row--wrap" style="position:relative;z-index:1">
+          <div>
+            <h1 class="page-title">Olá, <span id="dash-nome"></span>!</h1>
+            <p class="page-subtitle small" id="dash-telefone"></p>
+          </div>
+          <button class="btn btn--ghost btn--sm" data-action="refresh-dashboard">↻ Atualizar</button>
+        </div>
+        <div class="grid-stats" style="margin-top:18px">
+          <div class="stat"><p class="stat__label">Pagamento</p><p class="stat__value" id="dash-pagamento">—</p></div>
+          <div class="stat"><p class="stat__label">Seus jogos</p><p class="stat__value" id="dash-qtd-jogos">—</p></div>
+          <div class="stat"><p class="stat__label">Cota</p><p class="stat__value" data-valor="total">—</p></div>
+          <div class="stat"><p class="stat__label">Bolão</p><p class="stat__value" id="dash-status">—</p></div>
+        </div>
+      </div>
+
+      <div id="dash-avisos" class="stack-sm" hidden></div>
+
+      <div class="grid-3">
+        <article class="card card--fill">
+          <header class="card__header">
+            <h2 class="card__title">Seus 5 jogos</h2>
+            <button class="btn btn--outline btn--sm" id="btn-comprovante" data-action="download-receipt" hidden>📄 Comprovante</button>
+          </header>
+          <div id="dash-meus-jogos" class="stack-sm"></div>
+        </article>
+
+        <article class="card card--fill">
+          <header class="card__header">
+            <h2 class="card__title">Jogos especiais do bolão</h2>
+            <span class="card__icon" aria-hidden="true">🌟</span>
+          </header>
+          <p class="small muted" style="margin-bottom:12px">Apostas de 7, 8 ou 9 dezenas feitas com o fundo do grupo (<span data-valor="fundo">R$ 15,00</span> de cada cota).</p>
+          <div id="dash-oficiais" class="stack-sm"></div>
+        </article>
+
+        <article class="card card--fill">
+          <header class="card__header">
+            <h2 class="card__title">Jogos do grupo</h2>
+            <span class="badge" id="dash-outros-qtd">0</span>
+          </header>
+          <p class="small muted">Transparência total: todas as dezenas apostadas pelos outros participantes, sem nomes nem telefones.</p>
+          <details class="disclosure" style="margin-top:12px">
+            <summary>Ver todos os jogos</summary>
+            <div class="disclosure__body scroll-y scroll-y--lg stack-sm" id="dash-outros"></div>
+          </details>
+        </article>
+      </div>
+    </section>
   </main>
 
-  <!-- Rodapé com Link para Administração -->
-  <footer class="site-footer">
-    <p>Bolão da Mega da Virada • Organização Familiar & Amigos</p>
-    <p style="margin-top: 0.4rem;">
-      <a href="admin.html">🔒 Área do Organizador / Administração</a>
-    </p>
+  <footer class="app-footer">
+    Bolão privado entre família e amigos, sem vínculo com a Caixa Econômica Federal. Jogue com responsabilidade.
   </footer>
 
-  <!-- Scripts -->
-  <script src="js/config.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/pdfGenerator.js"></script>
-  <script src="js/app.js"></script>
+  <!-- ================= DIÁLOGOS ================= -->
+  <dialog class="modal" id="dialog-regras">
+    <div class="modal__header"><h3 class="modal__title">📜 Regras do bolão</h3></div>
+    <div class="modal__body stack-sm small">
+      <p>Cada participante paga uma cota de <strong data-valor="total">R$ 45,00</strong> via PIX:</p>
+      <p><strong data-valor="jogos">R$ 30,00</strong> pagam os seus <strong>5 jogos</strong> de 6 dezenas, escolhidos por você.</p>
+      <p><strong data-valor="fundo">R$ 15,00</strong> vão para o <strong>fundo do grupo</strong>, usado pelo organizador para jogos especiais de 7, 8 ou 9 dezenas.</p>
+      <p>Só participa quem tiver o pagamento confirmado até o fechamento do bolão. Os jogos são registrados antes do sorteio por causa da instabilidade do sistema das loterias nos dias 30 e 31/12.</p>
+    </div>
+    <div class="modal__footer"><button class="btn btn--info" data-action="close-dialog">Entendi</button></div>
+  </dialog>
+
+  <dialog class="modal" id="dialog-install">
+    <div class="modal__header"><h3 class="modal__title">Instalar aplicativo</h3></div>
+    <div class="modal__body small" id="install-instructions"></div>
+    <div class="modal__footer"><button class="btn btn--outline" data-action="close-dialog">Entendi</button></div>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
 </body>
 </html>
