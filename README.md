@@ -12,7 +12,8 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 ### Participante (`index.html`)
 - **Login** com WhatsApp + data de nascimento; **cadastro** com aceite das regras.
 - **Escolha dos 5 jogos** no volante de 60 dezenas: exatamente 6 por jogo, bloqueio de jogos idênticos, **surpresinha** que completa só as dezenas que faltam, navegação livre entre os jogos e tela de revisão.
-- **Pagamento via PIX**: valor da cota e divisão transparente (R$ 30 dos 5 jogos + R$ 15 para o fundo de jogos especiais), chave com botão de copiar (vem da aba `Config`) e botão “Já paguei” que avisa o organizador por e-mail.
+- **Pagamento via PIX** logo após o cadastro, com opção **“Pagar depois”**: valor da cota e divisão transparente (R$ 30 dos 5 jogos + R$ 15 para o fundo de jogos especiais), chave com botão de copiar (vem da aba `Config`), prazo de pagamento (28/12 às 12h; jogos registrados e bolão fechado às 18h) e botão “Já paguei” que avisa o organizador por e-mail.
+- **Convite para amigos** ao final do cadastro e no painel: mensagem pronta (com o prêmio estimado e o link do site) para WhatsApp, qualquer outro app ou copiar.
 - **Painel**: status do pagamento e do bolão, seus 5 jogos (com **comprovante em PDF**), jogos especiais do bolão (7–9 dezenas em destaque dourado) e todos os jogos do grupo sem nomes/telefones.
 - Instalável como app (PWA).
 
@@ -23,6 +24,7 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 - **Jogos oficiais** de 6, 7, 8 ou 9 dezenas, com surpresinha.
 - **Exportação TXT/PDF** de todos os jogos (oficiais + participantes **pagos**; opcionalmente os pendentes). O TXT tem um jogo por linha (`02,07,15,23,28,50`).
 - Fechar/reabrir o bolão e confirmar o registro na loteria (avisa todos no painel).
+- **Conferência do resultado**: digite as 6 dezenas sorteadas e veja os jogos (oficiais + participantes pagos) com 4 ou mais acertos. Nos jogos de 7 a 9 dezenas mostra quantas senas, quinas e quadras o jogo vale.
 - Configuração da chave PIX e do e-mail de notificações.
 
 ---
@@ -52,7 +54,7 @@ O código do backend (`code.gs`) **não fica neste repositório** (ele é públi
 
 > Ao alterar o `code.gs`, publique uma **nova versão** da implantação existente (Gerenciar implantações → Editar → Nova versão) para manter a mesma URL.
 
-A data do sorteio e a data de registro dos jogos ficam em `EDICAO`, em `js/config.js`.
+A data do sorteio, o prazo de pagamento, o horário de registro dos jogos e o prêmio estimado (usado no convite) ficam em `EDICAO`, em `js/config.js`.
 
 ---
 
@@ -79,6 +81,7 @@ js/
   participante.js     Fluxo do participante
   admin.js            Fluxo do organizador
   pdf.js              Comprovante e lista completa em PDF (jsPDF)
+  convite.js          Convite para amigos (WhatsApp, outros apps, copiar)
   pwa.js              Instalação e service worker
   main.js             Entrada do index.html
   admin-main.js       Entrada do admin.html

@@ -97,6 +97,7 @@
         <button class="tabs__btn" role="tab" data-action="tab" data-tab="participantes">👥 Participantes</button>
         <button class="tabs__btn" role="tab" data-action="tab" data-tab="novo">➕ Novo jogo oficial</button>
         <button class="tabs__btn" role="tab" data-action="tab" data-tab="oficiais">⭐ Jogos oficiais &amp; exportação</button>
+        <button class="tabs__btn" role="tab" data-action="tab" data-tab="conferencia">🏆 Conferência</button>
         <button class="tabs__btn" role="tab" data-action="tab" data-tab="config">⚙️ PIX &amp; notificações</button>
       </div>
 
@@ -171,6 +172,27 @@
             <button class="btn btn--outline grow" data-action="export-pdf">📄 Baixar PDF</button>
           </div>
         </article>
+      </div>
+
+      <!-- Conferência do resultado -->
+      <div class="card stack" style="max-width:760px" data-panel="conferencia" hidden>
+        <header class="card__header" style="margin:0">
+          <h2 class="card__title">Conferência do resultado</h2>
+          <span class="card__icon" aria-hidden="true">🏆</span>
+        </header>
+        <div id="conf-aviso" class="notice notice--warn small" hidden>
+          <span class="notice__icon" aria-hidden="true">🔓</span>
+          <p>O bolão ainda está <strong>aberto</strong>. Feche o bolão antes do sorteio para que a lista de jogos fique definitiva.</p>
+        </div>
+        <p class="small muted">Digite as 6 dezenas sorteadas. São conferidos os jogos oficiais do bolão e os jogos dos participantes com pagamento confirmado, e aparecem os que tiveram <strong>4 ou mais acertos</strong> (quadra, quina ou sena). Nos jogos de 7 a 9 dezenas mostramos quantas apostas premiadas o jogo vale.</p>
+        <form id="form-conferencia" class="field" novalidate>
+          <label class="label" for="conf-dezenas">6 dezenas sorteadas</label>
+          <div class="input-group">
+            <input class="input mono" id="conf-dezenas" name="sorteadas" type="text" inputmode="numeric" placeholder="05, 14, 23, 32, 48, 57" autocomplete="off">
+            <button type="submit" class="btn btn--warn">Conferir</button>
+          </div>
+        </form>
+        <div id="conf-resultado" class="stack-sm"></div>
       </div>
 
       <!-- Configuração do PIX -->

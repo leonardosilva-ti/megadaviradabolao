@@ -87,7 +87,7 @@ export function gerarComprovante(user, games) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.text("Este comprovante confirma o registro dos seus palpites no bolão privado da família e amigos.", w / 2, y, { align: "center" });
-  doc.text(`Os jogos serão registrados na loteria em ${EDICAO.dataRegistro}. Bolão sem vínculo com a Caixa Econômica Federal. Boa sorte!`, w / 2, y + 5, { align: "center" });
+  doc.text(`Os jogos serão registrados na loteria em ${EDICAO.registroJogos}. Bolão sem vínculo com a Caixa Econômica Federal. Boa sorte!`, w / 2, y + 5, { align: "center" });
 
   doc.save(`Comprovante_${nomeArquivo(user.name)}.pdf`);
 }

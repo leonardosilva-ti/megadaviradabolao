@@ -1,7 +1,8 @@
 import { api } from "./api.js";
 import { COTA, EDICAO, JOGOS_POR_PARTICIPANTE as TOTAL_JOGOS, DEZENAS_POR_JOGO as DEZENAS } from "./config.js";
 import { state, setUser, resetWizard, pagamentoInformado, marcarPagamentoInformado } from "./state.js";
-import { $, $$, showView, toast, withLoading, balls, gameCard, empty, buildPicker, updatePicker } from "./ui.js";
+import { $, $$, showView, toast, withLoading, openDialog, balls, gameCard, empty, buildPicker, updatePicker } from "./ui.js";
+import * as convite from "./convite.js";
 import {
   html, render, onlyDigits, pad2, firstName, formatPhone, formatBRL, toNumber, isValidBrDate,
   parseDezenas, completarAleatorio, indiceDuplicado, copyToClipboard,
@@ -31,6 +32,8 @@ function statusBolao() {
 export function renderValores() {
   const v = valores();
   $$("[data-valor]").forEach((el) => { el.textContent = formatBRL(v[el.dataset.valor]); });
+  $$("[data-edicao]").forEach((el) => { el.textContent = EDICAO[el.dataset.edicao]; });
+  convite.renderConvite(v.total);
 }
 
 // ---------- Login / cadastro ----------
@@ -145,7 +148,7 @@ export function renderDashboard() {
   } else if (fechado) {
     avisos.push(html`<div class="notice notice--warn"><span class="notice__icon" aria-hidden="true">⏳</span><div>
       <p><strong>Bolão fechado — aguardando o registro na loteria.</strong></p>
-      <p>Por causa da instabilidade do sistema das loterias em 30 e 31/12, os jogos serão registrados em <strong>${EDICAO.dataRegistro}</strong>.</p></div></div>`);
+      <p>Por causa da instabilidade do sistema das loterias em 30 e 31/12, os jogos serão registrados em <strong>${EDICAO.registroJogos}</strong>.</p></div></div>`);
   }
 
   if (carregado && !pago && fechado) {
@@ -155,7 +158,8 @@ export function renderDashboard() {
     avisos.push(html`<div class="notice notice--warn"><span class="notice__icon" aria-hidden="true">💰</span><div class="grow stack-sm">
       ${informado
         ? html`<p><strong>Pagamento informado!</strong> Aguardando o organizador conferir e dar baixa.</p>`
-        : html`<p>Seu pagamento de <strong>${formatBRL(valores().total)}</strong> ainda não foi confirmado pelo organizador.</p>`}
+        : html`<p>Seu pagamento de <strong>${formatBRL(valores().total)}</strong> ainda não foi feito ou confirmado.
+            Pague até <strong>${EDICAO.prazoPagamento}</strong> — em ${EDICAO.registroJogos} os jogos são registrados e o bolão é fechado.</p>`}
       <div class="row row--wrap">
         <button class="btn btn--outline btn--sm" data-action="open-payment">Ver chave PIX</button>
         ${informado ? "" : html`<button class="btn btn--primary btn--sm" data-action="notify-payment">✓ Já paguei via PIX</button>`}
@@ -326,6 +330,7 @@ export async function enviarJogos(button) {
 
   toast(res.message || "Seus jogos foram salvos!", "success");
   resetWizard();
+  fimDoCadastro = true; // ao sair do pagamento, oferece o convite para amigos
   await refreshDashboard();
   await abrirPagamento();
 }
@@ -348,13 +353,24 @@ export async function abrirPagamento() {
   $("[data-action='copy-pix']").disabled = !pix.chave;
 
   const pago = isPago(state.user);
+  const informado = pagamentoInformado(state.user.id);
   const { fechado } = statusBolao();
-  $("#pay-confirmar").hidden = pago || fechado || pagamentoInformado(state.user.id);
-  $("#pay-status").hidden = !(pago || pagamentoInformado(state.user.id));
+  const pendente = !pago && !informado && !fechado;
+  $("#pay-confirmar").hidden = !pendente;
+  $("#pay-depois").hidden = !pendente;
+  $("#pay-depois-hint").hidden = !pendente;
+  $("#pay-voltar").hidden = pendente;
+  $("#pay-status").hidden = !(pago || informado);
   $("#pay-status").textContent = pago
     ? "✅ Seu pagamento já foi confirmado pelo organizador."
     : "⏳ Pagamento informado — aguardando a conferência do organizador.";
   showView("view-payment");
+}
+
+/** "Pagar depois": volta ao painel (onde o PIX continua disponível até o prazo). */
+export function pagarDepois() {
+  toast(`Tudo bem! Você pode pagar pelo seu painel até ${EDICAO.prazoPagamento}.`, "info");
+  irParaPainel();
 }
 
 export async function copiarPix() {
@@ -369,11 +385,22 @@ export async function avisarPagamento(button) {
   if (!res.success) return toast(res.message, "error");
   marcarPagamentoInformado(state.user.id);
   toast(res.message || "Pagamento informado! O organizador vai conferir.", "success");
-  renderDashboard();
-  showView("view-dashboard");
+  irParaPainel();
 }
+
+let fimDoCadastro = false;
 
 export function irParaPainel() {
   renderDashboard();
   showView("view-dashboard");
+  if (fimDoCadastro) {
+    fimDoCadastro = false;
+    openDialog("dialog-convite");
+  }
 }
+
+// ---------- Convite ----------
+
+export const convidarWhatsApp = () => convite.compartilharWhatsApp(valores().total);
+export const convidarApp = () => convite.compartilharApp(valores().total);
+export const copiarConvite = () => convite.copiarConvite(valores().total);
