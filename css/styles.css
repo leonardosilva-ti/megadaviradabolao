@@ -416,30 +416,19 @@ details.disclosure > .disclosure__body { margin-top: 10px; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr:hover { background: var(--surface-2); }
 .table .actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
-.btn--kebab { width: 34px; padding: 0; font-size: 20px; line-height: 1; }
-.btn--kebab[aria-expanded="true"] { --_bg: var(--surface-3); }
+.table .col-check { width: 1%; padding-right: 0; }
+.table .col-check input { width: 18px; height: 18px; margin: 0; vertical-align: middle; accent-color: var(--brand); cursor: pointer; }
+.table tbody tr.is-selected { background: var(--brand-50); }
+.btn--trash { --_fg: var(--danger); width: 34px; padding: 0; }
+.btn--trash:hover:not(:disabled) { --_bg: var(--danger-bg); }
 
-/* ---------- Menu suspenso (⋮) ---------- */
-.menu {
-  position: fixed; z-index: 50; min-width: 220px; padding: 6px;
-  background: var(--surface); color: var(--text);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
-  animation: menu-in .12s var(--ease);
+/* Barra de ações em lote (aparece com participantes selecionados) */
+.bulk-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px;
+  padding: 8px 8px 8px 14px; border-radius: var(--radius);
+  background: var(--brand-50); border: 1px solid var(--brand-100);
 }
-.menu[hidden] { display: none; }
-.menu__item {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  min-height: 40px; padding: 0 12px; border: 0; border-radius: var(--radius-sm);
-  background: transparent; color: inherit; font: inherit; font-size: 14px; font-weight: 550;
-  text-align: left; cursor: pointer; white-space: nowrap;
-}
-.menu__item > span { width: 20px; text-align: center; flex: none; }
-.menu__item:hover, .menu__item:focus-visible { background: var(--surface-3); outline: none; }
-.menu__item--danger { color: var(--danger); }
-.menu__item--danger:hover, .menu__item--danger:focus-visible { background: var(--danger-bg); }
-.menu__sep { height: 1px; margin: 6px 4px; background: var(--border); }
-@keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } }
+.bulk-bar[hidden] { display: none; }
 
 .table .select { min-height: 34px; padding: 4px 8px; width: auto; font-size: 13px; }
 .truncate { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -578,5 +567,5 @@ dialog.modal::backdrop { background: rgb(8 14 10 / .55); backdrop-filter: blur(3
   .brand__tag { display: none; }
   .header-actions .btn__text { display: none; }
   .numbers { gap: 6px; }
-  .table .actions { flex-direction: column; align-items: flex-end; }
+  .table .actions { flex-direction: column; align-items: stretch; }
 }
