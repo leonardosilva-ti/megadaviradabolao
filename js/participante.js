@@ -111,6 +111,15 @@ export async function refreshDashboard(button) {
   return true;
 }
 
+/**
+ * O backend não informa o total de participantes, mas devolve todos os jogos do grupo
+ * e cada participante salva exatamente 5. Conta quem já escolheu os jogos (inclusive você).
+ */
+function contarParticipantes(d) {
+  const outros = Math.ceil(d.otherGames.length / TOTAL_JOGOS);
+  return outros + (d.myGames.length > 0 ? 1 : 0);
+}
+
 export function renderDashboard() {
   const u = state.user;
   if (!u) return;
@@ -124,7 +133,7 @@ export function renderDashboard() {
   $("#dash-nome").textContent = firstName(u.name);
   $("#dash-telefone").textContent = formatPhone(u.phone);
   $("#dash-pagamento").textContent = pago ? "✅ Confirmado" : informado ? "⏳ Em conferência" : "⏳ Pendente";
-  $("#dash-qtd-jogos").textContent = `${d.myGames.length} de ${TOTAL_JOGOS}`;
+  $("#dash-participantes").textContent = carregado ? contarParticipantes(d) : "—";
   $("#dash-status").textContent = !carregado ? "—" : registrado ? "Registrado" : fechado ? "Fechado" : "Aberto";
 
   // Avisos
