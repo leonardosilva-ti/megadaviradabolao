@@ -138,10 +138,13 @@
     <!-- ================= ESCOLHA DOS 5 JOGOS ================= -->
     <section id="view-wizard" class="view" data-view="user" hidden>
       <div class="card stack" style="max-width:760px;margin-inline:auto">
-        <div>
-          <p class="section-title">Seus palpites</p>
-          <h1 class="page-title" id="wizard-titulo">Jogo 1 de 5</h1>
-          <p class="page-subtitle small" id="wizard-greeting"></p>
+        <div class="row row--between" style="align-items:flex-start">
+          <div>
+            <p class="section-title" id="wizard-secao">Seus palpites</p>
+            <h1 class="page-title" id="wizard-titulo">Jogo 1 de 5</h1>
+            <p class="page-subtitle small" id="wizard-greeting"></p>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm" id="btn-cancelar-edicao" data-action="cancel-edit" hidden>✕ Cancelar</button>
         </div>
 
         <nav class="steps" id="wizard-steps" aria-label="Jogos"></nav>
@@ -172,12 +175,15 @@
       <div class="card stack" style="max-width:640px;margin-inline:auto">
         <div>
           <p class="section-title">Quase lá</p>
-          <h1 class="page-title">Revise seus 5 jogos</h1>
+          <h1 class="page-title" id="review-titulo">Revise seus 5 jogos</h1>
           <p class="page-subtitle small">Confira com atenção. Nenhum jogo pode ser igual a outro.</p>
         </div>
         <div id="review-list" class="stack-sm"></div>
         <div class="row row--between row--wrap">
-          <button type="button" class="btn btn--ghost" data-action="back-to-wizard">✏️ Alterar números</button>
+          <div class="row row--wrap">
+            <button type="button" class="btn btn--ghost" data-action="back-to-wizard">✏️ Alterar números</button>
+            <button type="button" class="btn btn--ghost" id="btn-cancelar-revisao" data-action="cancel-edit" hidden>✕ Cancelar</button>
+          </div>
           <button type="button" class="btn btn--primary" data-action="submit-games">✅ Confirmar e ir para o pagamento</button>
         </div>
       </div>
@@ -246,10 +252,14 @@
 
       <div class="grid-3">
         <article class="card card--fill">
-          <header class="card__header">
-            <h2 class="card__title">Seus 5 jogos</h2>
-            <button class="btn btn--outline btn--sm" id="btn-comprovante" data-action="download-receipt" hidden>📄 Comprovante</button>
+          <header class="card__header" style="flex-wrap:wrap">
+            <h2 class="card__title" style="white-space:nowrap">Seus 5 jogos</h2>
+            <div class="row">
+              <button class="btn btn--primary btn--sm" id="btn-editar-jogos" data-action="edit-games" hidden>✏️ Editar</button>
+              <button class="btn btn--outline btn--sm" id="btn-comprovante" data-action="download-receipt" hidden>📄 Comprovante</button>
+            </div>
           </header>
+          <p class="hint" id="dash-meus-prazo" style="margin-bottom:12px" hidden></p>
           <div id="dash-meus-jogos" class="stack-sm"></div>
         </article>
 
@@ -264,7 +274,10 @@
 
         <article class="card card--fill">
           <header class="card__header">
-            <h2 class="card__title">Jogos do grupo</h2>
+            <div class="row" style="gap:6px">
+              <h2 class="card__title">Jogos do grupo</h2>
+              <button class="btn-info" data-action="open-dialog" data-dialog="dialog-info-grupo" aria-label="Por que os jogos do grupo podem mudar?" title="Os jogos podem sofrer alterações">i</button>
+            </div>
             <span class="badge" id="dash-outros-qtd">0</span>
           </header>
           <p class="small muted">Transparência total: todas as dezenas apostadas pelos outros participantes, sem nomes nem telefones.</p>
@@ -318,6 +331,16 @@
       <button class="btn btn--outline" data-action="invite-copy">🔗 Copiar</button>
       <button class="btn btn--ghost" data-action="close-dialog">Agora não</button>
     </div>
+  </dialog>
+
+  <dialog class="modal" id="dialog-info-grupo">
+    <div class="modal__header"><h3 class="modal__title">ℹ️ Os jogos do grupo podem mudar</h3></div>
+    <div class="modal__body stack-sm small">
+      <p>Os jogos mostrados aqui <strong>ainda podem sofrer alterações</strong>: cada participante pode editar os próprios palpites até o fechamento do bolão, em <strong data-edicao="registroJogos">28/12 às 18h</strong>.</p>
+      <p>A lista também muda quando novas pessoas entram no bolão ou quando alguém é removido pelo organizador.</p>
+      <p>Depois do fechamento, os jogos ficam definitivos e são esses que serão registrados na loteria.</p>
+    </div>
+    <div class="modal__footer"><button class="btn btn--info" data-action="close-dialog">Entendi</button></div>
   </dialog>
 
   <dialog class="modal" id="dialog-install">

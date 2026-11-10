@@ -3,7 +3,7 @@
  * Reproduz as mesmas ações e o mesmo formato de resposta do code.gs,
  * gravando tudo no localStorage do navegador.
  */
-import { COTA, DEMO } from "./config.js";
+import { COTA, DEMO, EDICAO } from "./config.js";
 import { local, onlyDigits, pad2 } from "./utils.js";
 
 const KEYS = {
@@ -101,6 +101,9 @@ const actions = {
   saveGames({ participantId, games }) {
     if (!participantId) return { success: false, error: "ID do participante não informado." };
     if (!Array.isArray(games) || games.length !== 5) return { success: false, error: "É necessário enviar exatamente 5 jogos." };
+    if (fechado()) return { success: false, error: "O bolão está fechado: não é mais possível alterar os jogos." };
+    if (Date.now() >= new Date(EDICAO.prazoAlteracao).getTime()) return { success: false, error: "O prazo para escolher ou alterar os jogos já terminou." };
+    if (!db.get("participantes").some((p) => p.id === participantId)) return { success: false, error: "Participante não encontrado." };
     for (const [i, g] of games.entries()) {
       const nums = (g ?? []).map(Number);
       if (nums.length !== 6) return { success: false, error: `O Jogo ${i + 1} deve conter exatamente 6 dezenas.` };

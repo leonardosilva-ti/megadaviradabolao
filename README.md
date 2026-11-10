@@ -14,7 +14,7 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 - **Escolha dos 5 jogos** no volante de 60 dezenas: exatamente 6 por jogo, bloqueio de jogos idênticos, **surpresinha** que completa só as dezenas que faltam, navegação livre entre os jogos e tela de revisão.
 - **Pagamento via PIX** logo após o cadastro, com opção **“Pagar depois”**: valor da cota e divisão transparente (R$ 30 dos 5 jogos + R$ 15 para o fundo de jogos especiais), chave com botão de copiar (vem da aba `Config`), prazo de pagamento (28/12 às 12h; jogos registrados e bolão fechado às 18h) e botão “Já paguei” que avisa o organizador por e-mail.
 - **Convite para amigos** ao final do cadastro e no painel: mensagem pronta (com o prêmio estimado e o link do site) para WhatsApp, qualquer outro app ou copiar.
-- **Painel**: status do pagamento e do bolão, seus 5 jogos (com **comprovante em PDF**), jogos especiais do bolão (7–9 dezenas em destaque dourado) e todos os jogos do grupo sem nomes/telefones.
+- **Painel**: status do pagamento e do bolão, seus 5 jogos (com **comprovante em PDF** e botão **Editar**, liberado até o fechamento do bolão — `EDICAO.prazoAlteracao` no `js/config.js` e `PRAZO_ALTERACAO_JOGOS` no `code.gs`, ou antes se o organizador fechar o bolão), jogos especiais do bolão (7–9 dezenas em destaque dourado) e todos os jogos do grupo sem nomes/telefones (com aviso de que podem mudar até o fechamento).
 - Instalável como app (PWA).
 
 ### Organizador (`admin.html`)

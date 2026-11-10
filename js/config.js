@@ -12,6 +12,9 @@ export const EDICAO = {
   // Os jogos são registrados antes por causa da instabilidade do sistema das loterias em 30 e 31/12.
   prazoPagamento: "28/12 às 12h",
   registroJogos: "28/12 às 18h",
+  // Até quando o participante pode alterar os jogos (mesmo momento de `registroJogos`, horário de Brasília).
+  // Mantenha igual a PRAZO_ALTERACAO_JOGOS no code.gs.
+  prazoAlteracao: "2026-12-28T18:00:00-03:00",
   premioEstimado: "mais de R$ 1 bilhão",
 };
 
