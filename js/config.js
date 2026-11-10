@@ -10,7 +10,9 @@ export const EDICAO = {
   dataSorteio: "31/12/2026",
   horaSorteio: "20h",
   // Os jogos são registrados antes por causa da instabilidade do sistema das loterias em 30 e 31/12.
-  dataRegistro: "29/12",
+  prazoPagamento: "28/12 às 12h",
+  registroJogos: "28/12 às 18h",
+  premioEstimado: "mais de R$ 1 bilhão",
 };
 
 /** Regras da cota. O valor total pode ser sobrescrito pela chave ValorTotal da aba Config. */

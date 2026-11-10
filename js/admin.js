@@ -57,6 +57,7 @@ function renderTudo() {
   renderOficiais();
   renderConfig();
   renderSeletorJogo();
+  renderAvisoConferencia();
 }
 
 // ---------- Status do bolão ----------
@@ -85,6 +86,7 @@ async function alterarStatus(button, action, mensagem, opts) {
   if (res.StatusBolao) cfg.StatusBolao = res.StatusBolao;
   if (res.RegistroLoteria) cfg.RegistroLoteria = res.RegistroLoteria;
   renderStatus();
+  renderAvisoConferencia();
 }
 
 export const fecharBolao = (el) => alterarStatus(el, "adminCloseBolao",
@@ -313,6 +315,91 @@ export async function exportarPdf(button) {
   } catch (e) {
     toast(e.message, "error");
   }
+}
+
+// ---------- Conferência do resultado ----------
+
+const comb = (n, k) => {
+  if (k < 0 || k > n) return 0;
+  let r = 1;
+  for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i;
+  return Math.round(r);
+};
+
+/**
+ * Quantas apostas de 6 dezenas premiadas um jogo de `n` dezenas com `acertos` equivale.
+ * Ex.: jogo de 8 dezenas com 5 acertos = 3 quinas + 15 quadras.
+ */
+function faixas(n, acertos) {
+  return {
+    sena: comb(acertos, 6),
+    quina: comb(acertos, 5) * comb(n - acertos, 1),
+    quadra: comb(acertos, 4) * comb(n - acertos, 2),
+  };
+}
+
+const descreverFaixas = (f) => [
+  f.sena && `${f.sena} sena${f.sena > 1 ? "s" : ""}`,
+  f.quina && `${f.quina} quina${f.quina > 1 ? "s" : ""}`,
+  f.quadra && `${f.quadra} quadra${f.quadra > 1 ? "s" : ""}`,
+].filter(Boolean).join(" + ");
+
+export function renderAvisoConferencia() {
+  $("#conf-aviso").hidden = statusBolao().fechado;
+}
+
+export function conferir(form) {
+  const nums = form.elements.sorteadas.value.split(/[^\d]+/).filter(Boolean).map(Number);
+  if (nums.length !== 6) return toast("Informe exatamente as 6 dezenas sorteadas.", "error");
+  if (nums.some((n) => n < 1 || n > 60)) return toast("As dezenas devem estar entre 01 e 60.", "error");
+  if (new Set(nums).size !== 6) return toast("Há dezenas repetidas no resultado.", "error");
+
+  const sorteadas = new Set(nums.map(pad2));
+  const { participants, bolaoGames } = dados();
+
+  // Jogos efetivamente registrados: os oficiais + os de quem pagou.
+  const jogos = [
+    ...bolaoGames.map((g, i) => {
+      const dezenas = parseDezenas(g.dezenas);
+      return { dezenas, oficial: true, label: `Jogo oficial #${i + 1} · ${dezenas.length} dezenas` };
+    }),
+    ...participants.filter(isPago).flatMap((p) => (p.games ?? []).map((g, i) => ({
+      dezenas: parseDezenas(g.dezenas), oficial: false,
+      label: `${p.name} · Jogo ${g.jogoNumero ?? g.gameNumber ?? i + 1}`,
+    }))),
+  ];
+
+  const premiados = jogos
+    .map((j) => {
+      const acertos = j.dezenas.filter((d) => sorteadas.has(d)).length;
+      return { ...j, acertos, faixas: faixas(j.dezenas.length, acertos) };
+    })
+    .filter((j) => j.acertos >= 4)
+    .sort((a, b) => b.acertos - a.acertos || b.dezenas.length - a.dezenas.length);
+
+  const total = premiados.reduce((t, j) => ({
+    sena: t.sena + j.faixas.sena, quina: t.quina + j.faixas.quina, quadra: t.quadra + j.faixas.quadra,
+  }), { sena: 0, quina: 0, quadra: 0 });
+
+  const resultado = html`<p class="section-title">Resultado conferido</p>${balls([...sorteadas].sort(), { variant: "gold" })}`;
+
+  render($("#conf-resultado"), premiados.length
+    ? html`${resultado}
+      <div class="notice notice--success"><span class="notice__icon" aria-hidden="true">🏆</span><div>
+        <p><strong>${premiados.length} jogo(s) premiado(s)!</strong> Total: ${descreverFaixas(total)}.</p>
+        <p class="small muted">${jogos.length} jogos conferidos (oficiais + participantes com pagamento confirmado).</p>
+      </div></div>
+      ${premiados.map((j) => gameCard(j.dezenas, j.label, {
+        size: "sm",
+        gold: j.oficial,
+        hits: sorteadas,
+        extra: html`<span class="badge ${j.acertos === 6 ? "badge--gold" : "badge--brand"}">${j.acertos} acertos · ${descreverFaixas(j.faixas)}</span>`,
+      }))}`
+    : html`${resultado}
+      <div class="notice"><span class="notice__icon" aria-hidden="true">🔎</span><div>
+        <p><strong>Nenhum jogo com 4 ou mais acertos.</strong></p>
+        <p class="small muted">${jogos.length} jogos conferidos (oficiais + participantes com pagamento confirmado).</p>
+      </div></div>`);
 }
 
 // ---------- Configuração do PIX ----------

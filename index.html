@@ -99,6 +99,7 @@
               <div class="kv"><dt>Fundo do grupo para <strong>jogos especiais de 7, 8 ou 9 dezenas</strong> (a quantidade depende do total arrecadado)</dt><dd data-valor="fundo">R$ 15,00</dd></div>
             </dl>
             <p>Todos os jogos registrados ficam disponíveis no painel para conferência de todos.</p>
+            <p>⏰ O pagamento pode ser feito agora ou depois, até <strong data-edicao="prazoPagamento">28/12 às 12h</strong>. Em <strong data-edicao="registroJogos">28/12 às 18h</strong> os jogos são registrados e o bolão é fechado.</p>
           </div>
         </div>
 
@@ -205,15 +206,20 @@
         </div>
 
         <div class="notice notice--warn small">
-          <span class="notice__icon" aria-hidden="true">⚠️</span>
-          <p>Depois de fazer o PIX no app do seu banco, toque em <strong>"Já paguei"</strong> para avisar o organizador.</p>
+          <span class="notice__icon" aria-hidden="true">⏰</span>
+          <div>
+            <p><strong>Prazo: até <span data-edicao="prazoPagamento">28/12 às 12h</span>.</strong> Em <span data-edicao="registroJogos">28/12 às 18h</span> os jogos são registrados na loteria e o bolão é fechado — quem não pagou fica de fora.</p>
+            <p>Depois de fazer o PIX no app do seu banco, toque em <strong>"Já paguei"</strong> para avisar o organizador.</p>
+          </div>
         </div>
 
         <p class="notice notice--success small" id="pay-status" hidden></p>
 
         <div class="stack-sm">
           <button class="btn btn--primary btn--block btn--lg" id="pay-confirmar" data-action="notify-payment">👉 Já paguei, avisar o organizador</button>
-          <button class="btn btn--ghost btn--block" data-action="go-dashboard">Ir para o meu painel →</button>
+          <button class="btn btn--outline btn--block" id="pay-depois" data-action="pay-later">🕒 Pagar depois</button>
+          <p class="hint center" id="pay-depois-hint">Sem problema: o PIX fica disponível no seu painel até o prazo.</p>
+          <button class="btn btn--ghost btn--block" id="pay-voltar" data-action="go-dashboard" hidden>Ir para o meu painel →</button>
         </div>
       </div>
     </section>
@@ -268,6 +274,18 @@
           </details>
         </article>
       </div>
+
+      <div class="banner">
+        <div>
+          <p style="color:#fff;font-weight:700;font-size:15px">🤝 Convide família e amigos</p>
+          <p>O prêmio já está em <span data-edicao="premioEstimado">mais de R$ 1 bilhão</span>! Mais gente no bolão = mais jogos especiais para todos.</p>
+        </div>
+        <div class="row row--wrap">
+          <button class="btn btn--whatsapp btn--sm" data-action="invite-whatsapp">📱 WhatsApp</button>
+          <button class="btn btn--outline btn--sm" data-action="invite-share">📤 Outros apps</button>
+          <button class="btn btn--outline btn--sm" data-action="invite-copy">🔗 Copiar convite</button>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -282,9 +300,24 @@
       <p>Cada participante paga uma cota de <strong data-valor="total">R$ 45,00</strong> via PIX:</p>
       <p><strong data-valor="jogos">R$ 30,00</strong> pagam os seus <strong>5 jogos</strong> de 6 dezenas, escolhidos por você.</p>
       <p><strong data-valor="fundo">R$ 15,00</strong> vão para o <strong>fundo do grupo</strong>, usado pelo organizador para jogos especiais de 7, 8 ou 9 dezenas.</p>
-      <p>Só participa quem tiver o pagamento confirmado até o fechamento do bolão. Os jogos são registrados antes do sorteio por causa da instabilidade do sistema das loterias nos dias 30 e 31/12.</p>
+      <p>O pagamento vai até <strong data-edicao="prazoPagamento">28/12 às 12h</strong>. Em <strong data-edicao="registroJogos">28/12 às 18h</strong> os jogos são registrados e o bolão é fechado — só participa quem tiver o pagamento confirmado. O registro é antecipado por causa da instabilidade do sistema das loterias nos dias 30 e 31/12.</p>
     </div>
     <div class="modal__footer"><button class="btn btn--info" data-action="close-dialog">Entendi</button></div>
+  </dialog>
+
+  <dialog class="modal" id="dialog-convite">
+    <div class="modal__header"><h3 class="modal__title">🎉 Cadastro concluído! Bora chamar mais gente?</h3></div>
+    <div class="modal__body stack-sm small">
+      <p>O prêmio da Mega da Virada já está em <strong data-edicao="premioEstimado">mais de R$ 1 bilhão</strong>. Cada nova cota aumenta o fundo do grupo e garante mais jogos especiais de 7, 8 e 9 dezenas — mais chances para todo mundo.</p>
+      <p class="muted">Mensagem que será enviada:</p>
+      <p class="card card--flat" style="padding:12px;white-space:pre-line;font-size:13px" data-convite-preview></p>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--whatsapp" data-action="invite-whatsapp">📱 WhatsApp</button>
+      <button class="btn btn--outline" data-action="invite-share">📤 Outros apps</button>
+      <button class="btn btn--outline" data-action="invite-copy">🔗 Copiar</button>
+      <button class="btn btn--ghost" data-action="close-dialog">Agora não</button>
+    </div>
   </dialog>
 
   <dialog class="modal" id="dialog-install">

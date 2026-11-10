@@ -37,6 +37,7 @@ const actions = {
 const forms = {
   "form-admin-login": admin.adminLogin,
   "form-adm-pix": admin.salvarPix,
+  "form-conferencia": admin.conferir,
 };
 
 function bindEvents() {

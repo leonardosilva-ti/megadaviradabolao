@@ -19,6 +19,10 @@ const actions = {
 
   "refresh-dashboard": (el) => p.refreshDashboard(el),
   "go-dashboard": () => p.irParaPainel(),
+  "pay-later": () => p.pagarDepois(),
+  "invite-whatsapp": () => p.convidarWhatsApp(),
+  "invite-share": () => p.convidarApp(),
+  "invite-copy": () => p.copiarConvite(),
   "open-payment": () => p.abrirPagamento(),
   "copy-pix": () => p.copiarPix(),
   "notify-payment": (el) => p.avisarPagamento(el),

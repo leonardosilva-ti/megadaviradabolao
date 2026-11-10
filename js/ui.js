@@ -107,13 +107,15 @@ export async function withLoading(button, fn) {
 
 /**
  * @param {string[]} dezenas
- * @param {{ size?: ""|"sm"|"xs", variant?: ""|"muted"|"gold", slots?: number }} opts
+ * @param {{ size?: ""|"sm"|"xs", variant?: ""|"muted"|"gold", slots?: number, hits?: Set<string> }} opts
  *   slots: completa com bolinhas vazias até esse total (seleção em andamento).
+ *   hits: destaca as dezenas sorteadas e apaga as demais (conferência).
  */
-export function balls(dezenas, { size = "", variant = "", slots = 0 } = {}) {
+export function balls(dezenas, { size = "", variant = "", slots = 0, hits } = {}) {
   const base = `ball${size ? ` ball--${size}` : ""}`;
   const vazias = Math.max(0, slots - dezenas.length);
-  return html`<div class="balls">${dezenas.map((n) => html`<span class="${base}${variant ? ` ball--${variant}` : ""}">${n}</span>`)}${
+  const cls = (n) => (hits ? (hits.has(n) ? " ball--hit" : " ball--dim") : variant ? ` ball--${variant}` : "");
+  return html`<div class="balls">${dezenas.map((n) => html`<span class="${base}${cls(n)}">${n}</span>`)}${
     Array.from({ length: vazias }, () => html`<span class="${base} ball--empty" aria-hidden="true">–</span>`)}</div>`;
 }
 
