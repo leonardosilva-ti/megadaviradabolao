@@ -180,6 +180,28 @@ const actions = {
     return { success: true, message: `Participante ${p.name} excluído${removidos ? ` (com ${removidos} jogo(s)).` : "."}` };
   },
 
+  adminUpdatePaymentBulk(data) {
+    if (!autorizado(data)) return negado;
+    if (!["Pago", "Pendente"].includes(data.status)) return { success: false, error: "Status inválido. Use 'Pago' ou 'Pendente'." };
+    const ids = new Set(data.participantIds ?? []);
+    if (!ids.size) return { success: false, error: "Nenhum participante selecionado." };
+    const lista = db.get("participantes");
+    const feitos = lista.filter((p) => ids.has(p.id)).map((p) => { p.paymentStatus = data.status; return p.id; });
+    db.set("participantes", lista);
+    return { success: true, message: `Status de ${feitos.length} participante(s) alterado para '${data.status}'.`, participantIds: feitos };
+  },
+
+  adminDeleteParticipants(data) {
+    if (!autorizado(data)) return negado;
+    const ids = new Set(data.participantIds ?? []);
+    if (!ids.size) return { success: false, error: "Nenhum participante selecionado." };
+    const lista = db.get("participantes");
+    const feitos = lista.filter((p) => ids.has(p.id)).map((p) => p.id);
+    db.set("participantes", lista.filter((p) => !ids.has(p.id)));
+    db.set("jogos", db.get("jogos").filter((j) => !ids.has(j.participantId)));
+    return { success: true, message: `${feitos.length} participante(s) excluído(s).`, participantIds: feitos };
+  },
+
   adminAddGame(data) {
     if (!autorizado(data)) return negado;
     const nums = (data.dezenas ?? []).map(Number);

@@ -114,10 +114,19 @@
             </select>
           </div>
         </div>
+        <div class="bulk-bar" id="adm-lote" role="region" aria-label="Ações para os selecionados" hidden>
+          <strong class="small" id="adm-lote-qtd" aria-live="polite"></strong>
+          <div class="row row--wrap">
+            <button class="btn btn--primary btn--sm" data-action="bulk-pay">✓ Dar baixa</button>
+            <button class="btn btn--danger btn--sm" data-action="bulk-delete">Excluir</button>
+            <button class="btn btn--ghost btn--sm" data-action="bulk-clear">Limpar seleção</button>
+          </div>
+        </div>
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
+                <th class="col-check"><input type="checkbox" id="adm-check-todos" aria-label="Selecionar todos os participantes listados"></th>
                 <th>Nome</th>
                 <th>Nascimento</th>
                 <th>Jogos</th>
@@ -248,9 +257,6 @@
       <button class="btn btn--primary" value="ok" data-confirm="true" id="confirm-ok">Confirmar</button>
     </div>
   </dialog>
-
-  <!-- Menu de ações (⋮) das linhas de participantes — preenchido por admin.js -->
-  <div class="menu" id="row-menu" role="menu" aria-label="Ações do participante" hidden></div>
 
   <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
 </body>

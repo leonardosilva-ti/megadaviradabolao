@@ -21,10 +21,12 @@ const actions = {
   "open-bolao": (el) => admin.reabrirBolao(el),
   "confirm-lottery": (el) => admin.confirmarLoteria(el),
 
-  "row-menu": (el) => admin.alternarMenu(el),
   "toggle-payment": (el) => admin.alternarPagamento(el),
   "view-games": (el) => admin.verJogos(el),
   "delete-participant": (el) => admin.excluirParticipante(el),
+  "bulk-pay": (el) => admin.darBaixaEmLote(el),
+  "bulk-delete": (el) => admin.excluirEmLote(el),
+  "bulk-clear": () => admin.desmarcarTodos(),
 
   "game-size": (el) => admin.definirTamanho(el),
   "admin-surpresinha": () => admin.surpresinha(),
@@ -45,8 +47,6 @@ const forms = {
 function bindEvents() {
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-action]");
-    // Clique fora do menu ⋮ (ou em um item dele) fecha o menu.
-    if (admin.menuAberto() && el?.dataset.action !== "row-menu") admin.fecharMenu(false);
     if (!el || el.disabled) return;
     const handler = actions[el.dataset.action];
     if (handler) {
@@ -63,18 +63,13 @@ function bindEvents() {
     }
   });
 
-  document.addEventListener("keydown", (e) => admin.teclaMenu(e));
-  // O menu fica em position: fixed; ao rolar ou redimensionar, fecha para não "descolar" da linha.
-  window.addEventListener("resize", () => admin.fecharMenu(false));
-  document.addEventListener("scroll", (e) => {
-    if (!e.target.closest?.("#row-menu")) admin.fecharMenu(false);
-  }, true);
-
   document.addEventListener("input", (e) => {
     if (e.target.id === "adm-busca") admin.renderTabela();
   });
   document.addEventListener("change", (e) => {
     if (e.target.id === "adm-filtro") admin.renderTabela();
+    else if (e.target.id === "adm-check-todos") admin.marcarTodos(e.target);
+    else if (e.target.matches(".row-check")) admin.marcarParticipante(e.target);
   });
 }
 

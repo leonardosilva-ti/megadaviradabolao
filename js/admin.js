@@ -46,6 +46,7 @@ export async function carregarAdmin(button) {
 }
 
 export function sair() {
+  marcados.clear();
   clearSession();
   showView("view-admin-login");
 }
@@ -137,89 +138,138 @@ export function renderTabela() {
     return String(p.name).toLowerCase().includes(busca) || (buscaDigitos && onlyDigits(p.phone).includes(buscaDigitos));
   });
 
+  // Descarta da seleção quem não existe mais (excluído ou recarregado)
+  const existentes = new Set(dados().participants.map((p) => p.id));
+  for (const id of marcados) if (!existentes.has(id)) marcados.delete(id);
+  visiveis = lista.map((p) => p.id);
+
   render($("#adm-tabela"), lista.length
     ? lista.map((p) => {
       const pago = isPago(p);
       const completo = (p.gamesCount || 0) >= JOGOS_POR_PARTICIPANTE;
-      return html`<tr>
+      const marcado = marcados.has(p.id);
+      return html`<tr class="${marcado ? "is-selected" : ""}">
+        <td class="col-check"><input type="checkbox" class="row-check" data-select="${p.id}" aria-label="Selecionar ${p.name}" ${marcado ? "checked" : ""}></td>
         <td style="min-width:170px"><strong>${p.name}</strong><br><span class="xsmall muted" style="white-space:nowrap">${formatPhone(p.phone)}</span></td>
         <td>${p.birthdate || "—"}</td>
         <td><span class="badge ${completo ? "badge--brand" : ""}">${p.gamesCount || 0} de ${JOGOS_POR_PARTICIPANTE}</span></td>
         <td><span class="badge ${pago ? "badge--brand" : "badge--warn"}">${pago ? "Pago" : "Pendente"}</span></td>
         <td><div class="actions">
-          <button class="btn btn--ghost btn--sm btn--kebab" data-action="row-menu" data-id="${p.id}"
-            aria-haspopup="menu" aria-expanded="false" aria-controls="row-menu" aria-label="Ações para ${p.name}">⋮</button>
+          <button class="btn btn--sm ${pago ? "btn--outline" : "btn--primary"}" data-action="toggle-payment" data-id="${p.id}" data-status="${pago ? "Pendente" : "Pago"}">
+            ${pago ? "↩ Voltar p/ pendente" : "✓ Dar baixa"}</button>
+          <button class="btn btn--ghost btn--sm" data-action="view-games" data-id="${p.id}">👁️ Jogos</button>
+          <button class="btn btn--ghost btn--sm btn--trash" data-action="delete-participant" data-id="${p.id}" aria-label="Excluir ${p.name}" title="Excluir participante">${ICONE_LIXEIRA}</button>
         </div></td>
       </tr>`;
     })
-    : html`<tr><td colspan="5" class="center muted">Nenhum participante encontrado.</td></tr>`);
+    : html`<tr><td colspan="6" class="center muted">Nenhum participante encontrado.</td></tr>`);
+  renderSelecao();
 }
 
-// ---------- Menu de ações (⋮) da linha ----------
+// ---------- Seleção múltipla (dar baixa / excluir em lote) ----------
 
-let menuTrigger = null;
+const marcados = new Set();
+let visiveis = [];
 
-/** Abre (ou fecha, se já estiver aberto para esta linha) o menu de ações do participante. */
-export function alternarMenu(trigger) {
-  if (menuTrigger === trigger) return fecharMenu(true);
-  fecharMenu(false);
-  const p = dados().participants.find((x) => x.id === trigger.dataset.id);
-  if (!p) return;
-  const pago = isPago(p);
-  const menu = $("#row-menu");
+const ICONE_LIXEIRA = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`;
 
-  render(menu, html`
-    <button type="button" class="menu__item" role="menuitem" data-action="toggle-payment" data-id="${p.id}" data-status="${pago ? "Pendente" : "Pago"}">
-      <span aria-hidden="true">${pago ? "↩" : "✓"}</span>${pago ? "Voltar para pendente" : "Dar baixa no pagamento"}</button>
-    <button type="button" class="menu__item" role="menuitem" data-action="view-games" data-id="${p.id}">
-      <span aria-hidden="true">👁️</span>Ver jogos</button>
-    <div class="menu__sep" role="separator"></div>
-    <button type="button" class="menu__item menu__item--danger" role="menuitem" data-action="delete-participant" data-id="${p.id}">
-      <span aria-hidden="true">🗑️</span>Excluir participante</button>`);
+const participantesMarcados = () => dados().participants.filter((p) => marcados.has(p.id));
 
-  menu.hidden = false;
-  menuTrigger = trigger;
-  trigger.setAttribute("aria-expanded", "true");
-  posicionarMenu();
-  menu.querySelector(".menu__item")?.focus();
+function renderSelecao() {
+  const todos = $("#adm-check-todos");
+  const qtdVisiveisMarcados = visiveis.filter((id) => marcados.has(id)).length;
+  todos.checked = visiveis.length > 0 && qtdVisiveisMarcados === visiveis.length;
+  todos.indeterminate = qtdVisiveisMarcados > 0 && qtdVisiveisMarcados < visiveis.length;
+  todos.disabled = visiveis.length === 0;
+
+  const sel = participantesMarcados();
+  const pendentes = sel.filter((p) => !isPago(p)).length;
+  $("#adm-lote").hidden = sel.length === 0;
+  $("#adm-lote-qtd").textContent = `${sel.length} selecionado(s)`;
+  const baixa = $("[data-action='bulk-pay']");
+  baixa.disabled = pendentes === 0;
+  baixa.textContent = pendentes ? `✓ Dar baixa (${pendentes})` : "✓ Todos já pagos";
+  $("[data-action='bulk-delete']").textContent = `Excluir (${sel.length})`;
 }
 
-function posicionarMenu() {
-  if (!menuTrigger) return;
-  const menu = $("#row-menu");
-  const r = menuTrigger.getBoundingClientRect();
-  const { offsetWidth: w, offsetHeight: h } = menu;
-  const margem = 8;
-  const left = Math.min(Math.max(margem, r.right - w), window.innerWidth - w - margem);
-  const abaixo = r.bottom + 4;
-  const top = abaixo + h > window.innerHeight - margem ? Math.max(margem, r.top - h - 4) : abaixo;
-  menu.style.left = `${left}px`;
-  menu.style.top = `${top}px`;
+export function marcarParticipante(input) {
+  const id = input.dataset.select;
+  if (input.checked) marcados.add(id); else marcados.delete(id);
+  input.closest("tr")?.classList.toggle("is-selected", input.checked);
+  renderSelecao();
 }
 
-/** Fecha o menu. `devolverFoco` volta o foco para o botão ⋮ (Esc / clique no próprio botão). */
-export function fecharMenu(devolverFoco = false) {
-  const menu = $("#row-menu");
-  if (!menuTrigger) return;
-  menu.hidden = true;
-  menuTrigger.setAttribute("aria-expanded", "false");
-  if (devolverFoco && menuTrigger.isConnected) menuTrigger.focus();
-  menuTrigger = null;
+export function marcarTodos(input) {
+  visiveis.forEach((id) => (input.checked ? marcados.add(id) : marcados.delete(id)));
+  renderTabela();
 }
 
-export const menuAberto = () => menuTrigger !== null;
+export function desmarcarTodos() {
+  marcados.clear();
+  renderTabela();
+}
 
-/** Setas ↑/↓, Home/End navegam pelos itens; Esc e Tab fecham. */
-export function teclaMenu(e) {
-  if (!menuTrigger) return;
-  if (e.key === "Escape") { e.preventDefault(); return fecharMenu(true); }
-  if (e.key === "Tab") return fecharMenu(false);
-  const itens = $$("#row-menu .menu__item");
-  const i = itens.indexOf(document.activeElement);
-  const destino = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: itens.length - 1 }[e.key];
-  if (destino === undefined) return;
-  e.preventDefault();
-  itens[(destino + itens.length) % itens.length].focus();
+/** "Ana, Bruno, Carla e mais 4" */
+function listarNomes(lista, max = 5) {
+  const nomes = lista.slice(0, max).map((p) => p.name);
+  return lista.length > max ? `${nomes.join(", ")} e mais ${lista.length - max}` : nomes.join(", ");
+}
+
+/**
+ * Chama a ação em lote; se o Apps Script publicado ainda não a conhecer,
+ * faz uma chamada por participante com a ação individual.
+ * Retorna { res, feitos } — `feitos` são os IDs efetivamente processados.
+ */
+async function executarEmLote(acaoLote, acaoUnica, ids, extra = {}) {
+  const res = await api(acaoLote, { password: senha(), participantIds: ids, ...extra });
+  if (res.success) return { res, feitos: res.participantIds ?? ids };
+  if (!/não reconhecida/i.test(res.message ?? "")) return { res, feitos: [] };
+
+  const feitos = [];
+  for (const id of ids) {
+    const r = await api(acaoUnica, { password: senha(), participantId: id, ...extra });
+    if (!r.success) return { res: r, feitos };
+    feitos.push(id);
+  }
+  return { res: { success: true }, feitos };
+}
+
+export async function darBaixaEmLote(button) {
+  const alvo = participantesMarcados().filter((p) => !isPago(p));
+  if (!alvo.length) return toast("Todos os selecionados já estão pagos.", "info");
+  if (!(await confirmDialog(`Registrar o pagamento de ${alvo.length} participante(s): ${listarNomes(alvo)}?`,
+    { title: "Dar baixa em lote", okText: `Dar baixa (${alvo.length})` }))) return;
+
+  const ids = alvo.map((p) => p.id);
+  const { res, feitos } = await withLoading(button, () => executarEmLote("adminUpdatePaymentBulk", "adminUpdatePayment", ids, { status: "Pago" }));
+  const ok = new Set(feitos);
+  dados().participants.forEach((p) => { if (ok.has(p.id)) p.paymentStatus = "Pago"; });
+  if (res.success) marcados.clear(); // concluído: começa uma seleção nova
+  else feitos.forEach((id) => marcados.delete(id)); // deixa marcados só os que faltaram
+  if (res.success) toast(`Baixa registrada para ${feitos.length} participante(s).`, "success");
+  else toast(`${feitos.length ? `${feitos.length} de ${ids.length} receberam baixa. ` : ""}${res.message}`, "error");
+  renderMetricas();
+  renderTabela();
+}
+
+export async function excluirEmLote(button) {
+  const alvo = participantesMarcados();
+  if (!alvo.length) return;
+  const pagos = alvo.filter(isPago).length;
+  const jogos = alvo.reduce((t, p) => t + (p.gamesCount || 0), 0);
+  const aviso = `Serão removidos do bolão ${alvo.length} participante(s)${jogos ? ` e ${jogos} jogo(s)` : ""}: ${listarNomes(alvo)}.`
+    + `${pagos ? ` Atenção: ${pagos} já com pagamento confirmado.` : ""} Essa ação não pode ser desfeita.`;
+  if (!(await confirmDialog(aviso, { title: `Excluir ${alvo.length} participante(s)?`, okText: `Excluir (${alvo.length})` }))) return;
+
+  const ids = alvo.map((p) => p.id);
+  const { res, feitos } = await withLoading(button, () => executarEmLote("adminDeleteParticipants", "adminDeleteParticipant", ids));
+  const removidos = new Set(feitos);
+  state.admin.data.participants = dados().participants.filter((p) => !removidos.has(p.id));
+  feitos.forEach((id) => marcados.delete(id));
+  if (res.success) toast(`${feitos.length} participante(s) excluído(s).`, "success");
+  else toast(`${feitos.length ? `${feitos.length} de ${ids.length} foram excluídos. ` : ""}${res.message}`, "error");
+  renderMetricas();
+  renderTabela();
 }
 
 export async function alternarPagamento(button) {
@@ -249,6 +299,7 @@ export async function excluirParticipante(button) {
   if (!res.success) return toast(res.message, "error");
   toast(res.message || `${p.name} foi excluído.`, "success");
   state.admin.data.participants = dados().participants.filter((x) => x.id !== id);
+  marcados.delete(id);
   renderMetricas();
   renderTabela();
 }
