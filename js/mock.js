@@ -167,6 +167,19 @@ const actions = {
     return { success: true, message: `Status do participante alterado para '${data.status}'.` };
   },
 
+  adminDeleteParticipant(data) {
+    if (!autorizado(data)) return negado;
+    const lista = db.get("participantes");
+    const p = lista.find((x) => x.id === data.participantId);
+    if (!p) return { success: false, error: "Participante não encontrado." };
+    const jogos = db.get("jogos");
+    const resto = jogos.filter((j) => j.participantId !== p.id);
+    const removidos = jogos.length - resto.length;
+    db.set("participantes", lista.filter((x) => x.id !== p.id));
+    db.set("jogos", resto);
+    return { success: true, message: `Participante ${p.name} excluído${removidos ? ` (com ${removidos} jogo(s)).` : "."}` };
+  },
+
   adminAddGame(data) {
     if (!autorizado(data)) return negado;
     const nums = (data.dezenas ?? []).map(Number);

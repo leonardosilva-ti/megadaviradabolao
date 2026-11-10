@@ -23,6 +23,7 @@ const actions = {
 
   "toggle-payment": (el) => admin.alternarPagamento(el),
   "view-games": (el) => admin.verJogos(el),
+  "delete-participant": (el) => admin.excluirParticipante(el),
 
   "game-size": (el) => admin.definirTamanho(el),
   "admin-surpresinha": () => admin.surpresinha(),

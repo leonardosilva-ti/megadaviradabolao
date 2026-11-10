@@ -18,9 +18,9 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 - Instalável como app (PWA).
 
 ### Organizador (`admin.html`)
-- Acesso por senha (aba `Config` → `AdminPassword`).
+- Acesso por senha, guardada na propriedade do script `AdminPass` (fora da planilha).
 - Métricas: participantes, pagos, pendentes, valor arrecadado, fundo e total de jogos a registrar.
-- Participantes: busca por nome/telefone, filtro por status, **dar baixa** / desfazer e ver os jogos de cada um.
+- Participantes: busca por nome/telefone, filtro por status, **dar baixa** / desfazer, ver os jogos de cada um e **excluir** o participante (remove também os jogos dele).
 - **Jogos oficiais** de 6, 7, 8 ou 9 dezenas, com surpresinha.
 - **Exportação TXT/PDF** de todos os jogos (oficiais + participantes **pagos**; opcionalmente os pendentes). O TXT tem um jogo por linha (`02,07,15,23,28,50`).
 - Fechar/reabrir o bolão e confirmar o registro na loteria (avisa todos no painel).
@@ -48,7 +48,7 @@ O código do backend (`code.gs`) **não fica neste repositório** (ele é públi
 1. Crie uma planilha em [sheets.new](https://sheets.new) e abra **Extensões → Apps Script**.
 2. Cole o conteúdo do `code.gs` e salve.
 3. Execute a função **`setupSpreadsheet`** uma vez (cria as abas e a `Config` com valores padrão) e autorize o acesso.
-4. Na aba `Config`, ajuste `AdminPassword`, `PixChave`, `PixTipo`, `PixNome`, `EmailNotificacao` e `ValorTotal`.
+4. Em **Configurações do projeto (⚙️) → Propriedades do script**, crie a propriedade `AdminPass` com a senha do organizador (sem ela o painel fica bloqueado). Na aba `Config`, ajuste `PixChave`, `PixTipo`, `PixNome`, `EmailNotificacao` e `ValorTotal`.
 5. **Implantar → Nova implantação → App da Web**, executar como **Eu** e acesso **Qualquer pessoa**.
 6. Copie a URL `.../exec` para `API_URL` em `js/config.js`.
 

@@ -150,6 +150,7 @@ export function renderTabela() {
           <button class="btn btn--sm ${pago ? "btn--outline" : "btn--primary"}" data-action="toggle-payment" data-id="${p.id}" data-status="${pago ? "Pendente" : "Pago"}">
             ${pago ? "↩ Voltar p/ pendente" : "✓ Dar baixa"}</button>
           <button class="btn btn--ghost btn--sm" data-action="view-games" data-id="${p.id}">👁️ Jogos</button>
+          <button class="btn btn--ghost btn--sm" style="color:var(--danger)" data-action="delete-participant" data-id="${p.id}" aria-label="Excluir ${p.name}">🗑️ Excluir</button>
         </div></td>
       </tr>`;
     })
@@ -166,6 +167,23 @@ export async function alternarPagamento(button) {
   if (!res.success) return toast(res.message, "error");
   p.paymentStatus = status;
   toast(status === "Pago" ? `Baixa registrada para ${p.name}.` : `${p.name} voltou para pendente.`, "success");
+  renderMetricas();
+  renderTabela();
+}
+
+export async function excluirParticipante(button) {
+  const id = button.dataset.id;
+  const p = dados().participants.find((x) => x.id === id);
+  if (!p) return;
+  const jogos = p.gamesCount || 0;
+  const aviso = `${p.name} (${formatPhone(p.phone)}) será removido do bolão${jogos ? ` junto com ${jogos} jogo(s)` : ""}.`
+    + `${isPago(p) ? " Atenção: o pagamento desta pessoa já está confirmado." : ""} Essa ação não pode ser desfeita.`;
+  if (!(await confirmDialog(aviso, { title: "Excluir participante?", okText: "Excluir participante" }))) return;
+
+  const res = await withLoading(button, () => api("adminDeleteParticipant", { password: senha(), participantId: id }));
+  if (!res.success) return toast(res.message, "error");
+  toast(res.message || `${p.name} foi excluído.`, "success");
+  state.admin.data.participants = dados().participants.filter((x) => x.id !== id);
   renderMetricas();
   renderTabela();
 }
