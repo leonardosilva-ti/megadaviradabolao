@@ -419,6 +419,17 @@ details.disclosure > .disclosure__body { margin-top: 10px; }
 .table .col-check { width: 1%; padding-right: 0; }
 .table .col-check input { width: 18px; height: 18px; margin: 0; vertical-align: middle; accent-color: var(--brand); cursor: pointer; }
 .table tbody tr.is-selected { background: var(--brand-50); }
+/* Botão redondo "i" de informação */
+.btn-info {
+  display: inline-grid; place-items: center; flex: none;
+  width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  border: 1.5px solid var(--info); background: var(--info-bg); color: var(--info);
+  font: italic 700 13px/1 Georgia, "Times New Roman", serif; cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+.btn-info:hover { background: var(--info); color: var(--surface); }
+.btn-info:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+
 .btn--trash { --_fg: var(--danger); width: 34px; padding: 0; }
 .btn--trash:hover:not(:disabled) { --_bg: var(--danger-bg); }
 

@@ -29,6 +29,8 @@ const actions = {
   "download-receipt": () => p.baixarComprovante(),
 
   "start-wizard": () => p.startWizard(),
+  "edit-games": () => p.editarJogos(),
+  "cancel-edit": () => p.cancelarEdicao(),
   "go-game": (el) => p.irParaJogo(el.dataset.index),
   "prev-game": () => p.jogoAnterior(),
   "next-game": () => p.proximoJogo(),

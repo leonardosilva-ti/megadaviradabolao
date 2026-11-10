@@ -28,6 +28,11 @@ function statusBolao() {
   };
 }
 
+const prazoEncerrado = () => Date.now() >= new Date(EDICAO.prazoAlteracao).getTime();
+
+/** Os jogos podem ser escolhidos/alterados enquanto o bolão estiver aberto e dentro do prazo. */
+const podeAlterarJogos = () => !statusBolao().fechado && !prazoEncerrado();
+
 /** Preenche os valores da cota em todos os elementos [data-valor]. */
 export function renderValores() {
   const v = valores();
@@ -88,7 +93,7 @@ export async function abrirPainelOuWizard() {
   showView("view-dashboard");
   const ok = await refreshDashboard();
   const qtdJogos = ok ? state.dashboard.myGames.length : (state.user.hasGames ? TOTAL_JOGOS : 0);
-  if (qtdJogos < TOTAL_JOGOS && !statusBolao().fechado) startWizard();
+  if (qtdJogos < TOTAL_JOGOS && podeAlterarJogos()) startWizard();
 }
 
 // ---------- Painel ----------
@@ -169,10 +174,17 @@ export function renderDashboard() {
   $("#dash-avisos").hidden = avisos.length === 0;
 
   // Meus jogos
+  const editavel = carregado && podeAlterarJogos();
   $("#btn-comprovante").hidden = d.myGames.length === 0;
+  $("#btn-editar-jogos").hidden = !(editavel && d.myGames.length > 0);
+  const prazo = $("#dash-meus-prazo");
+  prazo.hidden = !carregado || d.myGames.length === 0;
+  prazo.textContent = editavel
+    ? `✏️ Você pode alterar seus jogos até ${EDICAO.registroJogos}, quando o bolão fecha.`
+    : "🔒 Prazo de alteração encerrado: seus jogos estão definitivos.";
   render($("#dash-meus-jogos"), d.myGames.length
     ? d.myGames.map((g, i) => gameCard(parseDezenas(g.dezenas), `Jogo ${g.gameNumber || i + 1}`, { size: "sm" }))
-    : carregado && !fechado
+    : editavel
       ? html`<div class="empty stack-sm"><p>Você ainda não escolheu seus palpites.</p>
           <button class="btn btn--primary btn--sm" data-action="start-wizard">Escolher meus ${TOTAL_JOGOS} jogos</button></div>`
       : empty(carregado ? "Nenhum jogo cadastrado." : "Carregando…"));
@@ -213,13 +225,43 @@ export function setupWizard() {
     html`<button type="button" class="steps__item" data-action="go-game" data-index="${i}">Jogo ${i + 1}</button>`));
 }
 
+function avisoPrazo() {
+  return statusBolao().fechado
+    ? "O bolão está fechado: não é mais possível alterar os jogos."
+    : `O prazo para escolher ou alterar os jogos terminou em ${EDICAO.registroJogos}.`;
+}
+
 export function startWizard() {
-  if (statusBolao().fechado) return toast("O bolão está fechado para novos jogos.", "error");
+  if (!podeAlterarJogos()) return toast(avisoPrazo(), "error");
   resetWizard();
   $("#wizard-greeting").textContent =
     `Olá, ${firstName(state.user?.name)}! Escolha ${DEZENAS} dezenas para cada um dos seus ${TOTAL_JOGOS} jogos.`;
   showView("view-wizard");
   renderWizard();
+}
+
+/** Abre o volante já preenchido com os jogos salvos, para o participante alterar. */
+export function editarJogos() {
+  if (!podeAlterarJogos()) return toast(avisoPrazo(), "error");
+  const salvos = [...(state.dashboard?.myGames ?? [])].sort((a, b) => a.gameNumber - b.gameNumber);
+  if (!salvos.length) return startWizard();
+
+  resetWizard();
+  state.wizard.editando = true;
+  salvos.slice(0, TOTAL_JOGOS).forEach((g, i) => {
+    state.wizard.games[i] = parseDezenas(g.dezenas).map(Number).sort((a, b) => a - b);
+  });
+  $("#wizard-greeting").textContent =
+    `Toque nas dezenas para trocar os números. Você pode alterar até ${EDICAO.registroJogos}.`;
+  showView("view-wizard");
+  renderWizard();
+}
+
+/** Sai da edição sem salvar. */
+export function cancelarEdicao() {
+  resetWizard();
+  irParaPainel();
+  toast("Alteração cancelada. Seus jogos continuam os mesmos.", "info");
 }
 
 const jogoAtual = () => state.wizard.games[state.wizard.step];
@@ -235,9 +277,11 @@ function alternarDezena(n) {
 }
 
 function renderWizard() {
-  const { step, games } = state.wizard;
+  const { step, games, editando } = state.wizard;
   const jogo = jogoAtual();
 
+  $("#wizard-secao").textContent = editando ? "Alterar meus jogos" : "Seus palpites";
+  $("#btn-cancelar-edicao").hidden = !editando;
   $$("#wizard-steps .steps__item").forEach((el, i) => {
     el.classList.toggle("is-current", i === step);
     el.classList.toggle("is-done", i !== step && games[i].length === DEZENAS);
@@ -314,9 +358,13 @@ function validarTodos() {
 
 function mostrarRevisao() {
   if (!validarTodos()) return;
+  const { editando } = state.wizard;
   render($("#review-list"), state.wizard.games.map((g, i) => gameCard(g.map(pad2), `Jogo ${i + 1}`, {
     extra: html`<button type="button" class="btn btn--link xsmall" data-action="go-game" data-index="${i}">✏️ Alterar</button>`,
   })));
+  $("#review-titulo").textContent = editando ? "Revise as alterações" : `Revise seus ${TOTAL_JOGOS} jogos`;
+  $("[data-action='submit-games']").textContent = editando ? "✅ Salvar alterações" : "✅ Confirmar e ir para o pagamento";
+  $("#btn-cancelar-revisao").hidden = !editando;
   showView("view-review");
 }
 
@@ -324,12 +372,20 @@ export const voltarAoWizard = () => irParaJogo(state.wizard.step);
 
 export async function enviarJogos(button) {
   if (!validarTodos()) return;
+  if (!podeAlterarJogos()) return toast(avisoPrazo(), "error");
+  const { editando } = state.wizard;
   const res = await withLoading(button, () =>
     api("saveGames", { participantId: state.user.id, games: state.wizard.games }));
   if (!res.success) return toast(res.message, "error");
 
-  toast(res.message || "Seus jogos foram salvos!", "success");
   resetWizard();
+  if (editando) {
+    toast("Seus jogos foram alterados!", "success");
+    await refreshDashboard();
+    return irParaPainel();
+  }
+
+  toast(res.message || "Seus jogos foram salvos!", "success");
   fimDoCadastro = true; // ao sair do pagamento, oferece o convite para amigos
   await refreshDashboard();
   await abrirPagamento();
