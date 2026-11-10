@@ -147,13 +147,79 @@ export function renderTabela() {
         <td><span class="badge ${completo ? "badge--brand" : ""}">${p.gamesCount || 0} de ${JOGOS_POR_PARTICIPANTE}</span></td>
         <td><span class="badge ${pago ? "badge--brand" : "badge--warn"}">${pago ? "Pago" : "Pendente"}</span></td>
         <td><div class="actions">
-          <button class="btn btn--sm ${pago ? "btn--outline" : "btn--primary"}" data-action="toggle-payment" data-id="${p.id}" data-status="${pago ? "Pendente" : "Pago"}">
-            ${pago ? "↩ Voltar p/ pendente" : "✓ Dar baixa"}</button>
-          <button class="btn btn--ghost btn--sm" data-action="view-games" data-id="${p.id}">👁️ Jogos</button>
+          <button class="btn btn--ghost btn--sm btn--kebab" data-action="row-menu" data-id="${p.id}"
+            aria-haspopup="menu" aria-expanded="false" aria-controls="row-menu" aria-label="Ações para ${p.name}">⋮</button>
         </div></td>
       </tr>`;
     })
     : html`<tr><td colspan="5" class="center muted">Nenhum participante encontrado.</td></tr>`);
+}
+
+// ---------- Menu de ações (⋮) da linha ----------
+
+let menuTrigger = null;
+
+/** Abre (ou fecha, se já estiver aberto para esta linha) o menu de ações do participante. */
+export function alternarMenu(trigger) {
+  if (menuTrigger === trigger) return fecharMenu(true);
+  fecharMenu(false);
+  const p = dados().participants.find((x) => x.id === trigger.dataset.id);
+  if (!p) return;
+  const pago = isPago(p);
+  const menu = $("#row-menu");
+
+  render(menu, html`
+    <button type="button" class="menu__item" role="menuitem" data-action="toggle-payment" data-id="${p.id}" data-status="${pago ? "Pendente" : "Pago"}">
+      <span aria-hidden="true">${pago ? "↩" : "✓"}</span>${pago ? "Voltar para pendente" : "Dar baixa no pagamento"}</button>
+    <button type="button" class="menu__item" role="menuitem" data-action="view-games" data-id="${p.id}">
+      <span aria-hidden="true">👁️</span>Ver jogos</button>
+    <div class="menu__sep" role="separator"></div>
+    <button type="button" class="menu__item menu__item--danger" role="menuitem" data-action="delete-participant" data-id="${p.id}">
+      <span aria-hidden="true">🗑️</span>Excluir participante</button>`);
+
+  menu.hidden = false;
+  menuTrigger = trigger;
+  trigger.setAttribute("aria-expanded", "true");
+  posicionarMenu();
+  menu.querySelector(".menu__item")?.focus();
+}
+
+function posicionarMenu() {
+  if (!menuTrigger) return;
+  const menu = $("#row-menu");
+  const r = menuTrigger.getBoundingClientRect();
+  const { offsetWidth: w, offsetHeight: h } = menu;
+  const margem = 8;
+  const left = Math.min(Math.max(margem, r.right - w), window.innerWidth - w - margem);
+  const abaixo = r.bottom + 4;
+  const top = abaixo + h > window.innerHeight - margem ? Math.max(margem, r.top - h - 4) : abaixo;
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
+/** Fecha o menu. `devolverFoco` volta o foco para o botão ⋮ (Esc / clique no próprio botão). */
+export function fecharMenu(devolverFoco = false) {
+  const menu = $("#row-menu");
+  if (!menuTrigger) return;
+  menu.hidden = true;
+  menuTrigger.setAttribute("aria-expanded", "false");
+  if (devolverFoco && menuTrigger.isConnected) menuTrigger.focus();
+  menuTrigger = null;
+}
+
+export const menuAberto = () => menuTrigger !== null;
+
+/** Setas ↑/↓, Home/End navegam pelos itens; Esc e Tab fecham. */
+export function teclaMenu(e) {
+  if (!menuTrigger) return;
+  if (e.key === "Escape") { e.preventDefault(); return fecharMenu(true); }
+  if (e.key === "Tab") return fecharMenu(false);
+  const itens = $$("#row-menu .menu__item");
+  const i = itens.indexOf(document.activeElement);
+  const destino = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: itens.length - 1 }[e.key];
+  if (destino === undefined) return;
+  e.preventDefault();
+  itens[(destino + itens.length) % itens.length].focus();
 }
 
 export async function alternarPagamento(button) {
@@ -166,6 +232,23 @@ export async function alternarPagamento(button) {
   if (!res.success) return toast(res.message, "error");
   p.paymentStatus = status;
   toast(status === "Pago" ? `Baixa registrada para ${p.name}.` : `${p.name} voltou para pendente.`, "success");
+  renderMetricas();
+  renderTabela();
+}
+
+export async function excluirParticipante(button) {
+  const id = button.dataset.id;
+  const p = dados().participants.find((x) => x.id === id);
+  if (!p) return;
+  const jogos = p.gamesCount || 0;
+  const aviso = `${p.name} (${formatPhone(p.phone)}) será removido do bolão${jogos ? ` junto com ${jogos} jogo(s)` : ""}.`
+    + `${isPago(p) ? " Atenção: o pagamento desta pessoa já está confirmado." : ""} Essa ação não pode ser desfeita.`;
+  if (!(await confirmDialog(aviso, { title: "Excluir participante?", okText: "Excluir participante" }))) return;
+
+  const res = await withLoading(button, () => api("adminDeleteParticipant", { password: senha(), participantId: id }));
+  if (!res.success) return toast(res.message, "error");
+  toast(res.message || `${p.name} foi excluído.`, "success");
+  state.admin.data.participants = dados().participants.filter((x) => x.id !== id);
   renderMetricas();
   renderTabela();
 }
