@@ -94,7 +94,14 @@ async function boot() {
   showView("view-admin-login");
 
   // Restaura a sessão (senha guardada na sessionStorage até fechar a aba)
-  if (state.adminPassword && !(await admin.carregarAdmin())) showView("view-admin-login");
+  // Passe vencido em qualquer ação: volta para o login do painel
+  window.addEventListener("sessao-expirada", () => {
+    if (!state.adminToken) return;
+    admin.sair();
+    toast("A sessão do painel expirou (8 horas). Entre novamente com a senha.", "info");
+  });
+
+  if (state.adminToken && !(await admin.carregarAdmin())) showView("view-admin-login");
 }
 
 boot();

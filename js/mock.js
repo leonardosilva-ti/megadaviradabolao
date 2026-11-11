@@ -88,8 +88,15 @@ function aplicarStatus(p, status) {
   p.paymentStatus = status;
   if (status === "Pago") p.avisoPagamento = null;
 }
-const autorizado = (data) => String(data.password ?? "").trim() === DEMO.adminSenha;
-const negado = { success: false, error: "Acesso não autorizado." };
+// Passes do modo demonstração (no modo real eles são assinados com HMAC no code.gs)
+const passe = (tipo, id, ms) => `demo.${tipo}.${id}.${Date.now() + ms}`;
+function lerPasse(token, tipo) {
+  const [demo, t, id, exp] = String(token ?? "").split(".");
+  return demo === "demo" && t === tipo && Number(exp) > Date.now() ? { id } : null;
+}
+const autorizado = (data) => Boolean(lerPasse(data.token, "adm"));
+const negado = { success: false, sessaoExpirada: true, error: "A sessão do painel expirou. Entre novamente." };
+const ACOES_PARTICIPANTE = ["saveGames", "confirmPayment", "getDashboardData"];
 const fechado = () => db.get("config").StatusBolao === "Fechado";
 
 function jogosDe(participantId) {
@@ -110,7 +117,7 @@ const actions = {
       return { success: false, error: "Data de nascimento incorreta para o telefone informado. Verifique se digitou o dia, mês e ano corretamente." };
     }
     const games = jogosDe(p.id);
-    return { success: true, user: { id: p.id, name: p.name, phone: p.phone, birthdate, paymentStatus: p.paymentStatus, hasGames: games.length >= 5, games } };
+    return { success: true, token: passe("part", p.id, 30 * 864e5), user: { id: p.id, name: p.name, phone: p.phone, birthdate, paymentStatus: p.paymentStatus, hasGames: games.length >= 5, games } };
   },
 
   register({ name, phone, birthdate }) {
@@ -128,7 +135,7 @@ const actions = {
     }
     const user = { id: uid("p"), name, phone, birthdate, paymentStatus: "Pendente", createdAt: now() };
     db.set("participantes", [...lista, user]);
-    return { success: true, user: { id: user.id, name, phone, birthdate, paymentStatus: "Pendente" } };
+    return { success: true, token: passe("part", user.id, 30 * 864e5), user: { id: user.id, name, phone, birthdate, paymentStatus: "Pendente" } };
   },
 
   saveGames({ participantId, games }) {
@@ -214,7 +221,9 @@ const actions = {
   },
 
   adminLogin(data) {
-    return autorizado(data) ? { success: true, message: "Acesso administrativo concedido." } : { success: false, error: "Senha de administrador incorreta." };
+    return String(data.password ?? "").trim() === DEMO.adminSenha
+      ? { success: true, message: "Acesso administrativo concedido.", token: passe("adm", "org", 8 * 3600e3) }
+      : { success: false, error: "Senha de administrador incorreta." };
   },
 
   adminGetData(data) {
@@ -382,5 +391,12 @@ function setStatus(data, patch, message) {
 export async function mockRequest(action, payload) {
   await new Promise((r) => setTimeout(r, 250)); // simula a latência da rede
   const handler = actions[action];
-  return handler ? handler(payload) : { success: false, error: `Ação não reconhecida: ${action}` };
+  if (!handler) return { success: false, error: `Ação não reconhecida: ${action}` };
+  if (ACOES_PARTICIPANTE.includes(action)) {
+    // Mesmo comportamento do code.gs: o ID vem do passe
+    const sessao = lerPasse(payload.token, "part");
+    if (!sessao) return { success: false, sessaoExpirada: true, error: "Sua sessão expirou. Entre novamente com seu celular e data de nascimento." };
+    payload = { ...payload, participantId: sessao.id };
+  }
+  return handler(payload);
 }
