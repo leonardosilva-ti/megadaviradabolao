@@ -56,6 +56,13 @@ function avisoPendente(u = state.user, sit = situacaoPagamento(u)) {
   return { informado: local ? sit.falta : 0, restante: local ? 0 : sit.falta, data: "" };
 }
 
+/** Pagou (ou avisou que pagou) só uma parte da cota e ainda falta completar. */
+const pagouSoUmaParte = (u, sit, av) => !isPago(u) && sit.falta > 0 && (sit.pago > 0 || av.informado > 0);
+
+const textoAvisoIntegral = (sit) =>
+  `se o pagamento integral da cota (${formatBRL(sit.total)}) não for concluído até ${EDICAO.prazoPagamento}, `
+  + "você não participará do bolão e o valor já pago não será devolvido.";
+
 const dataCurta = (iso) => {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -223,7 +230,7 @@ export function renderDashboard() {
 
   if (carregado && !pago && fechado) {
     avisos.push(html`<div class="notice notice--danger"><span class="notice__icon" aria-hidden="true">⛔</span>
-      <p><strong>Você não está participando</strong>: o pagamento da cota não foi ${sit.parcial ? `completado (faltaram ${formatBRL(sit.falta)})` : "confirmado"} antes do fechamento do bolão.</p></div>`);
+      <p><strong>Você não está participando</strong>: o pagamento da cota não foi ${sit.parcial ? `completado (faltaram ${formatBRL(sit.falta)})` : "confirmado"} antes do fechamento do bolão.${sit.pago > 0 ? ` Conforme as regras, o valor já pago (${formatBRL(sit.pago)}) não será devolvido.` : ""}</p></div>`);
   } else if (carregado && !pago) {
     avisos.push(html`<div class="notice notice--warn"><span class="notice__icon" aria-hidden="true">💰</span><div class="grow stack-sm">
       ${sit.parcial ? html`
@@ -241,6 +248,8 @@ export function renderDashboard() {
             : html`<p>Seu pagamento de <strong>${formatBRL(valores().total)}</strong> ainda não foi feito ou confirmado.
               Pague até <strong>${EDICAO.prazoPagamento}</strong> — em ${EDICAO.registroJogos} os jogos são registrados e o bolão é fechado.
               Pode pagar tudo de uma vez ou em partes.</p>`}
+      ${pagouSoUmaParte(u, sit, av) ? html`
+        <p class="aviso-integral" role="note"><span aria-hidden="true">⚠️</span> <span><strong>Atenção:</strong> ${textoAvisoIntegral(sit)}</span></p>` : ""}
       <div class="row row--wrap">
         <button class="btn btn--outline btn--sm" data-action="open-payment">Ver chave PIX</button>
         ${informado ? "" : html`
@@ -568,6 +577,9 @@ export async function abrirPagamento() {
   $("#pay-preco-label").textContent = sit.parcial ? "Falta pagar" : "Valor da cota";
   $("#pay-preco").textContent = formatBRL(sit.parcial ? sit.falta : sit.total);
   $("#pay-parcial").hidden = !sit.parcial;
+  const parteSo = !fechado && pagouSoUmaParte(state.user, sit, av);
+  $("#pay-aviso-integral").hidden = !parteSo;
+  $("#pay-aviso-integral-texto").textContent = parteSo ? textoAvisoIntegral(sit) : "";
   $("#pay-parcial").textContent = sit.parcial
     ? `Você já pagou ${formatBRL(sit.pago)} de ${formatBRL(sit.total)}. Faça o PIX de ${formatBRL(sit.falta)} para completar a cota.`
     : "";

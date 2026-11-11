@@ -6,7 +6,7 @@
  * chega aos participantes na próxima abertura do app.
  */
 
-const CACHE_NAME = "mega-bolao-v16";
+const CACHE_NAME = "mega-bolao-v17";
 const STATIC_ASSETS = [
   "./",
   "./index.html",

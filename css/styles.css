@@ -465,6 +465,13 @@ details.disclosure > .disclosure__body { margin-top: 10px; }
   padding: 8px 8px 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);
 }
 
+/* Aviso de pagamento integral (quem pagou só uma parte) dentro do aviso do painel */
+.aviso-integral {
+  display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 10px 12px; font-size: 13.5px;
+  border-radius: var(--radius-sm); background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--text);
+}
+.aviso-integral strong { color: var(--danger); }
+
 /* Caixa "Tirar dúvidas no WhatsApp" na tela de cadastro */
 .duvidas {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px;
