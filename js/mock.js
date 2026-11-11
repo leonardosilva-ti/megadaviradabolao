@@ -86,6 +86,7 @@ function aplicarStatus(p, status) {
   }
   db.set("pagamentos", lista);
   p.paymentStatus = status;
+  if (status === "Pago") p.avisoPagamento = null;
 }
 const autorizado = (data) => String(data.password ?? "").trim() === DEMO.adminSenha;
 const negado = { success: false, error: "Acesso não autorizado." };
@@ -152,15 +153,40 @@ const actions = {
     return { success: true, message: "Seus 5 jogos foram salvos com sucesso!", games: formatados };
   },
 
-  confirmPayment({ participantId }) {
+  confirmPayment({ participantId, valor: valorInformado }) {
     if (!participantId) return { success: false, error: "ID do participante não informado." };
+    const lista = db.get("participantes");
+    const p = lista.find((x) => x.id === participantId);
     if (fechado()) {
-      const p = db.get("participantes").find((x) => x.id === participantId);
       return isPago(p)
         ? { success: true, message: "Seu pagamento já está confirmado!" }
         : { success: false, error: "O bolão está fechado. Não é mais possível confirmar pagamentos." };
     }
-    return { success: true, message: "Pagamento informado com sucesso. Aguardando conferência do organizador." };
+    if (!p) return { success: false, error: "Participante não encontrado." };
+    const { valorPendente } = resumo(p);
+    if (valorPendente <= 0) return { success: true, message: "Seu pagamento já está confirmado!" };
+
+    // Mesmo comportamento do code.gs: avisos ainda não conferidos se somam
+    const ja = p.avisoPagamento?.valor || 0;
+    const disponivel = money(valorPendente - ja);
+    if (disponivel <= 0) return { success: true, message: "Você já informou todo o valor que faltava. Aguarde a conferência do organizador.", avisoPagamento: p.avisoPagamento };
+    const temValor = valorInformado !== undefined && valorInformado !== null && String(valorInformado).trim() !== "";
+    const valor = temValor ? money(valorInformado) : disponivel;
+    const brl = (v) => `R$ ${money(v).toFixed(2).replace(".", ",")}`;
+    if (!(valor > 0)) return { success: false, error: "Informe um valor maior que zero." };
+    if (valor > disponivel) {
+      return { success: false, error: ja ? `Você já informou ${brl(ja)}. Falta informar no máximo ${brl(disponivel)}.` : `O valor é maior do que falta pagar (${brl(disponivel)}).` };
+    }
+    const total = money(ja + valor);
+    p.avisoPagamento = { valor: total, data: now(), parcial: total < valorPendente };
+    db.set("participantes", lista);
+    return {
+      success: true,
+      message: p.avisoPagamento.parcial
+        ? `Pagamento parcial de ${brl(valor)} informado. O organizador vai conferir.`
+        : "Pagamento informado com sucesso. Aguardando conferência do organizador.",
+      avisoPagamento: p.avisoPagamento,
+    };
   },
 
   getDashboardData({ participantId }) {
@@ -172,6 +198,7 @@ const actions = {
       user: {
         id: p.id, name: p.name, phone: p.phone, paymentStatus: p.paymentStatus || "Pendente",
         ...resumo(p), pagamentos: pagamentosDe(p.id).map(({ valor, data }) => ({ valor, data })),
+        avisoPagamento: resumo(p).valorPendente > 0 ? p.avisoPagamento ?? null : null,
       },
       myGames: jogosDe(p.id),
       // Depois do fechamento, só os jogos de quem pagou (os que são registrados)
@@ -250,11 +277,13 @@ const actions = {
     if (valor > r.valorPendente) return { success: false, error: `O valor é maior que o pendente (R$ ${r.valorPendente.toFixed(2).replace(".", ",")}).` };
     db.set("pagamentos", [...db.get("pagamentos"), { id: uid("pg"), participantId: p.id, valor, data: now(), tipo: "Parcial", obs: String(data.observacao ?? "").trim().slice(0, 200) }]);
     const quitou = somaDe(p.id) >= cota();
-    if (quitou) { p.paymentStatus = "Pago"; db.set("participantes", lista); }
+    if (quitou) p.paymentStatus = "Pago";
+    p.avisoPagamento = null; // o organizador conferiu o aviso
+    db.set("participantes", lista);
     return {
       success: true,
       message: quitou ? "Pagamento lançado. Cota quitada!" : `Pagamento de R$ ${valor.toFixed(2).replace(".", ",")} lançado.`,
-      paymentStatus: p.paymentStatus || "Pendente", ...resumo(p), pagamentos: pagamentosDe(p.id),
+      paymentStatus: p.paymentStatus || "Pendente", ...resumo(p), pagamentos: pagamentosDe(p.id), avisoPagamento: null,
     };
   },
 
