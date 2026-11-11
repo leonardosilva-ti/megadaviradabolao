@@ -32,6 +32,16 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 
 ---
 
+## Segurança
+
+- **Site (GitHub Pages):** HTTPS obrigatório; política de segurança (CSP) que só permite scripts do próprio site e do cdnjs; jsPDF carregado com verificação de integridade (SRI); página do participante fora dos buscadores (`noindex`).
+- **API (Apps Script):** a URL é pública, então tudo é validado no servidor. Limites de tentativas (CacheService): senha do organizador (10 erros em 15 min bloqueiam o painel por 15 min e enviam alerta por e-mail), login do participante (5 datas erradas por celular em 15 min), cadastros (30 por hora), avisos de pagamento (6 por participante por hora) e e-mails de notificação (40 a cada 6 h; alertas de segurança sempre passam).
+- **Planilha:** textos digitados por participantes são gravados como texto puro (sem injeção de fórmula) e escapados nos e-mails.
+- **PIX:** qualquer alteração da chave, titular, banco ou do e-mail de notificação gera alerta enviado ao e-mail **anterior** (e ao novo, se mudou).
+- **Senha do organizador:** só na propriedade do script `AdminPass` (nunca no repositório nem na planilha).
+
+---
+
 ## Testar localmente (modo demonstração)
 
 1. Em `js/config.js`, deixe `API_URL = ""` (os dados ficam no `localStorage`).
