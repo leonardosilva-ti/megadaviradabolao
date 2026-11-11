@@ -23,6 +23,8 @@ const actions = {
 
   "toggle-payment": (el) => admin.alternarPagamento(el),
   "view-games": (el) => admin.verJogos(el),
+  "open-payments": (el) => admin.abrirPagamentos(el),
+  "delete-payment": (el) => admin.removerPagamento(el),
   "delete-participant": (el) => admin.excluirParticipante(el),
   "bulk-pay": (el) => admin.darBaixaEmLote(el),
   "bulk-delete": (el) => admin.excluirEmLote(el),
@@ -41,6 +43,7 @@ const actions = {
 const forms = {
   "form-admin-login": admin.adminLogin,
   "form-adm-pix": admin.salvarPix,
+  "form-pagamento": admin.lancarPagamento,
   "form-conferencia": admin.conferir,
 };
 

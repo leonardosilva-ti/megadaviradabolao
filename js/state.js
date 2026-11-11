@@ -32,11 +32,16 @@ export function resetWizard() {
   state.wizard = novoWizard();
 }
 
-/** O backend só avisa o organizador por e-mail; guardamos localmente que o aviso foi enviado. */
-export const pagamentoInformado = (id) => (local.get(PAYMENT_KEY) ?? []).includes(id);
-export function marcarPagamentoInformado(id) {
+/**
+ * O backend só avisa o organizador por e-mail; guardamos localmente que o aviso foi enviado.
+ * Com pagamento em partes, o aviso vale para o valor já registrado naquele momento: quando o
+ * organizador lança uma parte, o participante pode avisar de novo ao pagar o restante.
+ */
+const chaveAviso = (id, valorPago) => (Number(valorPago) > 0 ? `${id}:${Number(valorPago).toFixed(2)}` : id);
+export const pagamentoInformado = (id, valorPago = 0) => (local.get(PAYMENT_KEY) ?? []).includes(chaveAviso(id, valorPago));
+export function marcarPagamentoInformado(id, valorPago = 0) {
   const ids = new Set(local.get(PAYMENT_KEY) ?? []);
-  ids.add(id);
+  ids.add(chaveAviso(id, valorPago));
   local.set(PAYMENT_KEY, [...ids]);
 }
 
