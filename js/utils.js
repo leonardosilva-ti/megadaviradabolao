@@ -70,6 +70,14 @@ export function toNumber(value, fallback = 0) {
   return Number.isFinite(n) && String(value ?? "").trim() !== "" ? n : fallback;
 }
 
+/** Valor digitado em reais ("R$ 1.234,56", "25,5", "25.50") → número com centavos (ou NaN). */
+export function parseValorBRL(texto) {
+  let t = String(texto ?? "").replace(/[^\d,.]/g, "");
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  const n = Number(t);
+  return t && Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
+}
+
 /** "04, 12, 23" | [4, 12, 23] -> ["04", "12", "23"] */
 export function parseDezenas(value) {
   const list = Array.isArray(value) ? value : String(value ?? "").split(/[^\d]+/);

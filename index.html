@@ -224,6 +224,7 @@
 
         <div class="stack-sm">
           <button class="btn btn--primary btn--block btn--lg" id="pay-confirmar" data-action="notify-payment">👉 Já paguei, avisar o organizador</button>
+          <button class="btn btn--outline btn--block" id="pay-parcial-btn" data-action="notify-partial">💸 Paguei só uma parte</button>
           <button class="btn btn--outline btn--block" id="pay-depois" data-action="pay-later">🕒 Pagar depois</button>
           <p class="hint center" id="pay-depois-hint">Sem problema: o PIX fica disponível no seu painel até o prazo.</p>
           <button class="btn btn--ghost btn--block" id="pay-voltar" data-action="go-dashboard" hidden>Ir para o meu painel →</button>
@@ -350,6 +351,24 @@
       <button class="btn btn--outline" data-action="invite-copy">🔗 Copiar</button>
       <button class="btn btn--ghost" data-action="close-dialog">Agora não</button>
     </div>
+  </dialog>
+
+  <dialog class="modal" id="dialog-pag-parcial">
+    <form id="form-pag-parcial" novalidate>
+      <div class="modal__header"><h3 class="modal__title">💸 Informar pagamento parcial</h3></div>
+      <div class="modal__body stack-sm">
+        <p class="small" id="parcial-info"></p>
+        <div class="field">
+          <label class="label" for="parcial-valor">Valor que você pagou agora (R$)</label>
+          <input class="input mono" id="parcial-valor" name="valor" type="text" inputmode="decimal" autocomplete="off" maxlength="12" required>
+          <span class="hint">O organizador recebe um aviso e, depois de conferir no extrato, registra o valor. O restante pode ser pago até <span data-edicao="prazoPagamento">28/12 às 12h</span>.</span>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--ghost" data-action="close-dialog">Cancelar</button>
+        <button type="submit" class="btn btn--primary">📨 Avisar o organizador</button>
+      </div>
+    </form>
   </dialog>
 
   <dialog class="modal" id="dialog-info-grupo">

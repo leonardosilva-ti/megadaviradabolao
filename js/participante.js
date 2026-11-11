@@ -5,7 +5,7 @@ import { $, $$, showView, toast, withLoading, openDialog, balls, gameCard, empty
 import * as convite from "./convite.js";
 import {
   html, render, onlyDigits, pad2, firstName, formatPhone, formatBRL, toNumber, isValidBrDate,
-  parseDezenas, completarAleatorio, indiceDuplicado, copyToClipboard,
+  parseDezenas, completarAleatorio, indiceDuplicado, copyToClipboard, parseValorBRL,
 } from "./utils.js";
 import { gerarComprovante, gerarComprovanteCompleto } from "./pdf.js";
 import { conferirJogos, descreverFaixas, lerSorteadas } from "./conferencia.js";
@@ -40,6 +40,26 @@ function situacaoPagamento(u = state.user) {
   const falta = u?.valorPendente !== undefined ? Math.max(0, Number(u.valorPendente) || 0) : Math.max(0, total - pago);
   return { total, pago, falta, parcial: pago > 0 && falta > 0 };
 }
+
+/**
+ * Aviso de pagamento que o participante fez e o organizador ainda não conferiu.
+ * informado: total já avisado; restante: quanto ainda falta avisar.
+ */
+function avisoPendente(u = state.user, sit = situacaoPagamento(u)) {
+  if (isPago(u) || sit.falta <= 0) return { informado: 0, restante: 0, data: "" };
+  if (u && "avisoPagamento" in u) { // Apps Script atualizado: o aviso fica na planilha
+    const informado = Math.min(sit.falta, Number(u.avisoPagamento?.valor) || 0);
+    return { informado, restante: Math.max(0, Math.round((sit.falta - informado) * 100) / 100), data: u.avisoPagamento?.data || "" };
+  }
+  // Apps Script antigo: só sabemos (neste aparelho) que avisou o valor inteiro
+  const local = pagamentoInformado(u?.id, sit.pago);
+  return { informado: local ? sit.falta : 0, restante: local ? 0 : sit.falta, data: "" };
+}
+
+const dataCurta = (iso) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+};
 
 const prazoEncerrado = () => Date.now() >= new Date(EDICAO.prazoAlteracao).getTime();
 
@@ -148,7 +168,8 @@ export function renderDashboard() {
   const { fechado, registrado } = statusBolao();
   const pago = isPago(u);
   const sit = situacaoPagamento(u);
-  const informado = pagamentoInformado(u.id, sit.pago);
+  const av = avisoPendente(u, sit);
+  const informado = av.informado > 0 && av.restante <= 0; // avisou tudo o que faltava
   const carregado = Boolean(state.dashboard);
 
   renderValores();
@@ -184,14 +205,20 @@ export function renderDashboard() {
           <div class="paybar" role="img" aria-label="${Math.round((sit.pago / sit.total) * 100)}% da cota pago"><span style="width:${Math.min(100, Math.round((sit.pago / sit.total) * 100))}%"></span></div>
         </div>` : ""}
       ${informado
-        ? html`<p><strong>Pagamento informado!</strong> Aguardando o organizador conferir e dar baixa.</p>`
-        : sit.parcial
-          ? html`<p>Pague o restante até <strong>${EDICAO.prazoPagamento}</strong> — em ${EDICAO.registroJogos} os jogos são registrados e o bolão é fechado.</p>`
-          : html`<p>Seu pagamento de <strong>${formatBRL(valores().total)}</strong> ainda não foi feito ou confirmado.
-            Pague até <strong>${EDICAO.prazoPagamento}</strong> — em ${EDICAO.registroJogos} os jogos são registrados e o bolão é fechado.</p>`}
+        ? html`<p><strong>Pagamento informado!</strong> Você avisou que pagou ${formatBRL(av.informado)}${av.data ? ` (${dataCurta(av.data)})` : ""}. Aguardando o organizador conferir e dar baixa.</p>`
+        : av.informado > 0
+          ? html`<p>📨 Você avisou que pagou <strong>${formatBRL(av.informado)}</strong>${av.data ? ` em ${dataCurta(av.data)}` : ""} — aguardando a conferência do organizador.
+              Ainda falta pagar <strong>${formatBRL(av.restante)}</strong> até ${EDICAO.prazoPagamento}.</p>`
+          : sit.parcial
+            ? html`<p>Pague o restante até <strong>${EDICAO.prazoPagamento}</strong> — em ${EDICAO.registroJogos} os jogos são registrados e o bolão é fechado.</p>`
+            : html`<p>Seu pagamento de <strong>${formatBRL(valores().total)}</strong> ainda não foi feito ou confirmado.
+              Pague até <strong>${EDICAO.prazoPagamento}</strong> — em ${EDICAO.registroJogos} os jogos são registrados e o bolão é fechado.
+              Pode pagar tudo de uma vez ou em partes.</p>`}
       <div class="row row--wrap">
         <button class="btn btn--outline btn--sm" data-action="open-payment">Ver chave PIX</button>
-        ${informado ? "" : html`<button class="btn btn--primary btn--sm" data-action="notify-payment">✓ ${sit.parcial ? "Já paguei o restante" : "Já paguei via PIX"}</button>`}
+        ${informado ? "" : html`
+          <button class="btn btn--primary btn--sm" data-action="notify-payment">✓ ${av.informado || sit.parcial ? `Já paguei o restante (${formatBRL(av.restante)})` : "Já paguei via PIX"}</button>
+          <button class="btn btn--outline btn--sm" data-action="notify-partial">💸 Paguei só uma parte</button>`}
       </div></div></div>`);
   }
   render($("#dash-avisos"), avisos);
@@ -506,7 +533,8 @@ export async function abrirPagamento() {
 
   const pago = isPago(state.user);
   const sit = situacaoPagamento();
-  const informado = pagamentoInformado(state.user.id, sit.pago);
+  const av = avisoPendente(state.user, sit);
+  const informado = av.informado > 0 && av.restante <= 0;
   const { fechado } = statusBolao();
 
   // Pagamento em partes: mostra quanto falta em vez do valor cheio da cota
@@ -518,13 +546,19 @@ export async function abrirPagamento() {
     : "";
   const pendente = !pago && !informado && !fechado;
   $("#pay-confirmar").hidden = !pendente;
+  $("#pay-confirmar").textContent = av.informado || sit.parcial
+    ? `👉 Já paguei o restante (${formatBRL(av.restante)}), avisar o organizador`
+    : "👉 Já paguei, avisar o organizador";
+  $("#pay-parcial-btn").hidden = !pendente;
   $("#pay-depois").hidden = !pendente;
   $("#pay-depois-hint").hidden = !pendente;
   $("#pay-voltar").hidden = pendente;
-  $("#pay-status").hidden = !(pago || informado);
+  $("#pay-status").hidden = !(pago || av.informado > 0);
   $("#pay-status").textContent = pago
     ? "✅ Seu pagamento já foi confirmado pelo organizador."
-    : "⏳ Pagamento informado — aguardando a conferência do organizador.";
+    : informado
+      ? "⏳ Pagamento informado — aguardando a conferência do organizador."
+      : `📨 Você avisou que pagou ${formatBRL(av.informado)} — aguardando a conferência. Ainda falta ${formatBRL(av.restante)}.`;
   showView("view-payment");
 }
 
@@ -541,11 +575,45 @@ export async function copiarPix() {
   toast(ok ? "Chave PIX copiada!" : "Não foi possível copiar. Selecione e copie manualmente.", ok ? "success" : "error");
 }
 
-export async function avisarPagamento(button) {
-  const res = await withLoading(button, () => api("confirmPayment", { participantId: state.user.id }));
-  if (!res.success) return toast(res.message, "error");
-  marcarPagamentoInformado(state.user.id, situacaoPagamento().pago);
+/** Envia o aviso de pagamento ao organizador (sem valor = tudo o que falta). */
+async function enviarAviso(button, valor) {
+  const res = await withLoading(button, () =>
+    api("confirmPayment", { participantId: state.user.id, ...(valor ? { valor } : {}) }));
+  if (!res.success) {
+    toast(res.message, "error");
+    return false;
+  }
+  if ("avisoPagamento" in res) setUser({ ...state.user, avisoPagamento: res.avisoPagamento });
+  else if (!valor) marcarPagamentoInformado(state.user.id, situacaoPagamento().pago); // Apps Script antigo
   toast(res.message || "Pagamento informado! O organizador vai conferir.", "success");
+  return true;
+}
+
+export async function avisarPagamento(button) {
+  if (await enviarAviso(button)) irParaPainel();
+}
+
+/** "Paguei só uma parte": abre a janela para o participante informar quanto pagou. */
+export function abrirPagamentoParcial() {
+  const av = avisoPendente();
+  if (av.restante <= 0) return toast("Você já informou todo o valor. Aguarde a conferência do organizador.", "info");
+  const form = $("#form-pag-parcial");
+  form.reset();
+  form.elements.valor.placeholder = "Ex.: 20,00";
+  $("#parcial-info").textContent = av.informado
+    ? `Você já avisou ${formatBRL(av.informado)}. Ainda falta pagar ${formatBRL(av.restante)}.`
+    : `Falta pagar ${formatBRL(av.restante)} da sua cota. Informe quanto você transferiu agora — o organizador confere no extrato e registra.`;
+  openDialog("dialog-pag-parcial");
+  form.elements.valor.focus();
+}
+
+export async function informarPagamentoParcial(form) {
+  const { restante } = avisoPendente();
+  const valor = parseValorBRL(form.elements.valor.value);
+  if (!(valor > 0)) return toast("Informe o valor que você pagou, por exemplo 20,00.", "error");
+  if (valor > restante) return toast(`O valor é maior do que falta pagar (${formatBRL(restante)}).`, "error");
+  if (!(await enviarAviso(form.querySelector('[type="submit"]'), valor))) return;
+  form.closest("dialog")?.close();
   irParaPainel();
 }
 

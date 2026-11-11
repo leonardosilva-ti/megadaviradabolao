@@ -249,6 +249,7 @@ export async function darBaixaEmLote(button) {
   dados().participants.forEach((p) => {
     if (!ok.has(p.id)) return;
     p.paymentStatus = "Pago";
+    p.avisoPagamento = null;
     if (res.pagamentos?.[p.id]) p.pagamentos = res.pagamentos[p.id];
   });
   if (res.success) marcados.clear(); // concluído: começa uma seleção nova
@@ -289,6 +290,7 @@ export async function alternarPagamento(button) {
   if (!res.success) return toast(res.message, "error");
   p.paymentStatus = status;
   if (res.pagamentos) p.pagamentos = res.pagamentos;
+  if (status === "Pago") p.avisoPagamento = null;
   toast(status === "Pago" ? `Baixa registrada para ${p.name}.` : `${p.name} voltou para pendente.`, "success");
   renderMetricas();
   renderTabela();
@@ -313,11 +315,15 @@ function resumoPagamento(p) {
 function celulaPagamento(p) {
   const r = resumoPagamento(p);
   if (isPago(p)) return html`<span class="badge badge--brand">Pago</span>`;
+  const aviso = p.avisoPagamento?.valor
+    ? html`<button type="button" class="aviso-pag" data-action="open-payments" data-id="${p.id}" title="Conferir e lançar o valor informado">
+        📨 informou ${formatBRL(p.avisoPagamento.valor)}${p.avisoPagamento.parcial ? " (parcial)" : ""}</button>`
+    : "";
   if (r.parcial) {
     return html`<span class="badge badge--info">Parcial</span>
-      <div class="xsmall muted" style="margin-top:4px;white-space:nowrap">${formatBRL(r.pago)} de ${formatBRL(r.cota)}<br>falta <strong>${formatBRL(r.falta)}</strong></div>`;
+      <div class="xsmall muted" style="margin-top:4px;white-space:nowrap">${formatBRL(r.pago)} de ${formatBRL(r.cota)}<br>falta <strong>${formatBRL(r.falta)}</strong></div>${aviso}`;
   }
-  return html`<span class="badge badge--warn">Pendente</span>`;
+  return html`<span class="badge badge--warn">Pendente</span>${aviso}`;
 }
 
 /** "R$ 1.234,56", "25,5", "25.50" → número. */
@@ -337,6 +343,8 @@ export function abrirPagamentos(button) {
   const form = $("#form-pagamento");
   form.reset();
   renderPagamentos();
+  const informado = Math.min(Number(p.avisoPagamento?.valor) || 0, resumoPagamento(p).falta);
+  if (informado > 0) form.elements.valor.value = formatBRL(informado).replace(/^R\$\s*/, "");
   openDialog("dialog-pagamentos");
   if (!form.hidden) form.elements.valor.focus();
 }
@@ -360,6 +368,15 @@ function renderPagamentos() {
   form.hidden = r.falta <= 0;
   form.elements.valor.placeholder = formatBRL(r.falta);
   $("#pag-quitado").hidden = r.falta > 0;
+  const aviso = !isPago(p) && p.avisoPagamento?.valor ? p.avisoPagamento : null;
+  $("#pag-aviso").hidden = !aviso;
+  if (aviso) {
+    const quando = new Date(aviso.data);
+    $("#pag-aviso-texto").textContent = `${p.name.split(" ")[0]} avisou que pagou ${formatBRL(aviso.valor)}`
+      + `${aviso.parcial ? " (pagamento parcial)" : ""}`
+      + `${Number.isNaN(quando.getTime()) ? "" : ` em ${quando.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`}.`
+      + " Confira no extrato e lance o valor abaixo (já preenchido).";
+  }
 
   const lista = [...(p.pagamentos ?? [])].sort((a, b) => String(b.data).localeCompare(String(a.data)));
   const quando = (d) => { const dt = new Date(d); return Number.isNaN(dt.getTime()) ? "" : dt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); };
@@ -376,6 +393,7 @@ function renderPagamentos() {
 function aplicarRespostaPagamento(p, res) {
   if (res.paymentStatus) p.paymentStatus = res.paymentStatus;
   if (res.pagamentos) p.pagamentos = res.pagamentos;
+  if ("avisoPagamento" in res) p.avisoPagamento = res.avisoPagamento;
   renderPagamentos();
   renderMetricas();
   renderTabela();

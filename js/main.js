@@ -26,6 +26,7 @@ const actions = {
   "open-payment": () => p.abrirPagamento(),
   "copy-pix": () => p.copiarPix(),
   "notify-payment": (el) => p.avisarPagamento(el),
+  "notify-partial": () => p.abrirPagamentoParcial(),
   "download-receipt": () => p.baixarComprovante(),
   "download-all-games": () => p.baixarTodosOsJogos(),
 
@@ -45,6 +46,7 @@ const forms = {
   "form-login": p.login,
   "form-register": p.register,
   "form-conf-participante": p.conferirResultado,
+  "form-pag-parcial": p.informarPagamentoParcial,
 };
 
 function bindEvents() {
