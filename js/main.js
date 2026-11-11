@@ -93,8 +93,22 @@ async function boot() {
   $("#demo-banner").hidden = !isDemo;
   showView("view-login");
 
-  // Restaura a sessão do participante (guardada no localStorage)
-  if (state.user?.id) await p.abrirPainelOuWizard();
+  // Passe vencido (30 dias) ou inválido: volta para o login
+  window.addEventListener("sessao-expirada", (e) => {
+    if (!state.user) return;
+    clearSession();
+    showView("view-login");
+    toast(e.detail || "Sua sessão expirou. Entre novamente.", "info");
+  });
+
+  // Restaura a sessão do participante (guardada no localStorage).
+  // Quem entrou antes dos passes assinados (sem token) precisa entrar de novo uma vez.
+  if (state.user?.id && !state.user.token) {
+    clearSession();
+    toast("Por segurança, entre novamente com seu celular e data de nascimento.", "info");
+  } else if (state.user?.id) {
+    await p.abrirPainelOuWizard();
+  }
 }
 
 boot();

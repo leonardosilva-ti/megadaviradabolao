@@ -1,13 +1,14 @@
 import { api } from "./api.js";
 import { COTA, DEZENAS_POR_JOGO, JOGOS_POR_PARTICIPANTE, TAMANHOS_JOGO_OFICIAL } from "./config.js";
-import { state, setAdminPassword, clearSession } from "./state.js";
+import { state, setAdminToken, clearSession } from "./state.js";
 import { $, $$, showView, toast, notify, withLoading, confirmDialog, openDialog, gameCard, balls, empty, buildPicker, updatePicker } from "./ui.js";
 import { html, render, onlyDigits, pad2, formatPhone, formatBRL, toNumber, parseDezenas, completarAleatorio, downloadFile } from "./utils.js";
 import { gerarListaCompleta } from "./pdf.js";
 import { conferirJogos, descreverFaixas, lerSorteadas } from "./conferencia.js";
 
 const isPago = (p) => String(p?.paymentStatus ?? "").toLowerCase() === "pago";
-const senha = () => state.adminPassword;
+/** Passe assinado do painel (a senha só é usada no login). */
+const sessao = () => state.adminToken;
 const dados = () => state.admin.data ?? { participants: [], bolaoGames: [], config: {} };
 
 // ---------- Login / carregamento ----------
@@ -20,18 +21,18 @@ export async function adminLogin(form) {
   const res = await withLoading(button, () => api("adminLogin", { password }));
   if (!res.success) return toast(res.message, "error");
 
-  setAdminPassword(password);
+  if (!res.token) return toast("Atualize o code.gs no Apps Script (nova versão) para usar o painel.", "error");
+  setAdminToken(res.token); // guarda só o passe, nunca a senha
   form.reset();
   await withLoading(button, () => carregarAdmin());
 }
 
 /** Carrega o painel. Retorna true se deu certo. */
 export async function carregarAdmin(button) {
-  if (!senha()) return false;
-  const res = await withLoading(button, () => api("adminGetData", { password: senha() }));
+  if (!sessao()) return false;
+  const res = await withLoading(button, () => api("adminGetData", { token: sessao() }));
   if (!res.success) {
-    toast(res.message, "error");
-    if (/autorizad|senha/i.test(res.message ?? "")) sair(); // senha trocada na planilha
+    if (!res.sessaoExpirada) toast(res.message, "error"); // passe vencido: o aviso vem do evento "sessao-expirada"
     return false;
   }
 
@@ -81,7 +82,7 @@ function renderStatus() {
 
 async function alterarStatus(button, action, mensagem, opts) {
   if (!(await confirmDialog(mensagem, opts))) return;
-  const res = await withLoading(button, () => api(action, { password: senha() }));
+  const res = await withLoading(button, () => api(action, { token: sessao() }));
   notify(res);
   if (!res.success) return;
   const cfg = dados().config;
@@ -224,13 +225,13 @@ function listarNomes(lista, max = 5) {
  * Retorna { res, feitos } — `feitos` são os IDs efetivamente processados.
  */
 async function executarEmLote(acaoLote, acaoUnica, ids, extra = {}) {
-  const res = await api(acaoLote, { password: senha(), participantIds: ids, ...extra });
+  const res = await api(acaoLote, { token: sessao(), participantIds: ids, ...extra });
   if (res.success) return { res, feitos: res.participantIds ?? ids };
   if (!/não reconhecida/i.test(res.message ?? "")) return { res, feitos: [] };
 
   const feitos = [];
   for (const id of ids) {
-    const r = await api(acaoUnica, { password: senha(), participantId: id, ...extra });
+    const r = await api(acaoUnica, { token: sessao(), participantId: id, ...extra });
     if (!r.success) return { res: r, feitos };
     feitos.push(id);
   }
@@ -286,7 +287,7 @@ export async function alternarPagamento(button) {
   if (!p) return;
   if (status === "Pendente" && !(await confirmDialog(`Voltar o pagamento de ${p.name} para pendente? O valor registrado na baixa (quitação) é removido; os valores parciais lançados continuam.`, { title: "Desfazer baixa", okText: "Voltar p/ pendente" }))) return;
 
-  const res = await withLoading(button, () => api("adminUpdatePayment", { password: senha(), participantId: id, status }));
+  const res = await withLoading(button, () => api("adminUpdatePayment", { token: sessao(), participantId: id, status }));
   if (!res.success) return toast(res.message, "error");
   p.paymentStatus = status;
   if (res.pagamentos) p.pagamentos = res.pagamentos;
@@ -408,7 +409,7 @@ export async function lancarPagamento(form) {
   if (valor > falta) return toast(`O valor é maior que o pendente (${formatBRL(falta)}).`, "error");
 
   const res = await withLoading(form.querySelector('[type="submit"]'), () => api("adminAddPayment", {
-    password: senha(), participantId: p.id, valor, observacao: form.elements.observacao.value.trim(),
+    token: sessao(), participantId: p.id, valor, observacao: form.elements.observacao.value.trim(),
   }));
   if (!res.success) {
     const antigo = /não reconhecida/i.test(res.message ?? "");
@@ -427,7 +428,7 @@ export async function removerPagamento(button) {
   if (!(await confirmDialog(`Remover o lançamento de ${formatBRL(item.valor)} de ${p.name}? Se o total ficar abaixo da cota, o pagamento volta para pendente.`,
     { title: "Remover lançamento", okText: "Remover" }))) return;
 
-  const res = await withLoading(button, () => api("adminDeletePayment", { password: senha(), paymentId: item.id }));
+  const res = await withLoading(button, () => api("adminDeletePayment", { token: sessao(), paymentId: item.id }));
   if (!res.success) return toast(res.message, "error");
   toast(res.message || "Lançamento removido.", "success");
   aplicarRespostaPagamento(p, res);
@@ -442,7 +443,7 @@ export async function excluirParticipante(button) {
     + `${isPago(p) ? " Atenção: o pagamento desta pessoa já está confirmado." : ""} Essa ação não pode ser desfeita.`;
   if (!(await confirmDialog(aviso, { title: "Excluir participante?", okText: "Excluir participante" }))) return;
 
-  const res = await withLoading(button, () => api("adminDeleteParticipant", { password: senha(), participantId: id }));
+  const res = await withLoading(button, () => api("adminDeleteParticipant", { token: sessao(), participantId: id }));
   if (!res.success) return toast(res.message, "error");
   toast(res.message || `${p.name} foi excluído.`, "success");
   state.admin.data.participants = dados().participants.filter((x) => x.id !== id);
@@ -517,7 +518,7 @@ export async function salvarJogoOficial(button) {
   const repetido = dados().bolaoGames.some((g) => parseDezenas(g.dezenas).join(",") === selecionadas.map(pad2).join(","));
   if (repetido && !(await confirmDialog("Já existe um jogo oficial com exatamente essas dezenas. Cadastrar mesmo assim?", { title: "Jogo repetido" }))) return;
 
-  const res = await withLoading(button, () => api("adminAddGame", { password: senha(), dezenas: selecionadas }));
+  const res = await withLoading(button, () => api("adminAddGame", { token: sessao(), dezenas: selecionadas }));
   if (!res.success) return toast(res.message, "error");
   toast(res.message || "Jogo oficial cadastrado!", "success");
   if (res.game) dados().bolaoGames.push(res.game);
@@ -545,7 +546,7 @@ function renderOficiais() {
 export async function excluirJogoOficial(button) {
   if (!(await confirmDialog("Excluir este jogo oficial do bolão?", { title: "Excluir jogo", okText: "Excluir" }))) return;
   const id = button.dataset.id;
-  const res = await withLoading(button, () => api("adminDeleteGame", { password: senha(), gameId: id }));
+  const res = await withLoading(button, () => api("adminDeleteGame", { token: sessao(), gameId: id }));
   if (!res.success) return toast(res.message, "error");
   toast(res.message || "Jogo excluído.", "success");
   state.admin.data.bolaoGames = dados().bolaoGames.filter((g) => String(g.id) !== id);
@@ -560,7 +561,7 @@ export async function excluirJogoOficial(button) {
  * Por padrão só entram participantes com pagamento confirmado.
  */
 async function coletarJogos(button) {
-  const res = await withLoading(button, () => api("adminExportAllJSON", { password: senha() }));
+  const res = await withLoading(button, () => api("adminExportAllJSON", { token: sessao() }));
   if (!res.success) {
     toast(res.message, "error");
     return null;
@@ -689,7 +690,7 @@ export async function salvarPix(form) {
     `Alterar a cota de ${formatBRL(cotaAntes)} para ${formatBRL(payload.valorTotal)}? Quem ainda não pagou passa a ver o novo valor; quem já está como "Pago" continua pago.`,
     { title: "Alterar valor da cota", okText: "Alterar cota" }))) return;
 
-  const res = await withLoading(form.querySelector('[type="submit"]'), () => api("adminSavePixConfig", { password: senha(), ...payload }));
+  const res = await withLoading(form.querySelector('[type="submit"]'), () => api("adminSavePixConfig", { token: sessao(), ...payload }));
   notify(res, "Configurações salvas!");
   if (!res.success) return;
   Object.assign(dados().config, payload, res.config ?? {});

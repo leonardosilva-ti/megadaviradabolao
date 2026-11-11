@@ -16,6 +16,8 @@ function track(delta) {
 function normalize(data) {
   if (!data || typeof data !== "object") return { success: false, message: "Resposta vazia do servidor." };
   if (!data.message && data.error) data.message = data.error;
+  // Passe vencido/inválido: a tela volta para o login (tratado em main.js / admin-main.js)
+  if (data.sessaoExpirada) window.dispatchEvent(new CustomEvent("sessao-expirada", { detail: data.message }));
   return data;
 }
 

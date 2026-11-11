@@ -3,15 +3,18 @@ import { local, session } from "./utils.js";
 
 // Mesmas chaves da versão anterior, para não deslogar quem já estava logado.
 const USER_KEY = "megadavirada_session_user";
-const ADMIN_KEY = "megadavirada_admin_pass";
+const ADMIN_KEY = "megadavirada_admin_sessao"; // passe assinado do painel (nunca a senha)
+const OLD_ADMIN_KEY = "megadavirada_admin_pass"; // versão antiga guardava a senha: apagamos
 const PAYMENT_KEY = "megadavirada_pagamento_informado";
 
 const novoWizard = () => ({ step: 0, games: Array.from({ length: JOGOS_POR_PARTICIPANTE }, () => []) });
 
+session.remove(OLD_ADMIN_KEY);
+
 /** Estado global da aplicação (em memória + sessão no armazenamento do navegador). */
 export const state = {
   user: local.get(USER_KEY),
-  adminPassword: session.get(ADMIN_KEY),
+  adminToken: session.get(ADMIN_KEY),
   dashboard: null,
   config: null,
   publicConfig: null, // configuração pública (antes do login), ex.: WhatsApp do organizador
@@ -24,9 +27,9 @@ export function setUser(user) {
   user ? local.set(USER_KEY, user) : local.remove(USER_KEY);
 }
 
-export function setAdminPassword(password) {
-  state.adminPassword = password || null;
-  password ? session.set(ADMIN_KEY, password) : session.remove(ADMIN_KEY);
+export function setAdminToken(token) {
+  state.adminToken = token || null;
+  token ? session.set(ADMIN_KEY, token) : session.remove(ADMIN_KEY);
 }
 
 export function resetWizard() {
@@ -48,7 +51,7 @@ export function marcarPagamentoInformado(id, valorPago = 0) {
 
 export function clearSession() {
   setUser(null);
-  setAdminPassword(null);
+  setAdminToken(null);
   state.dashboard = null;
   state.config = null;
   state.admin = { data: null, tamanho: 7, selecionadas: [] };

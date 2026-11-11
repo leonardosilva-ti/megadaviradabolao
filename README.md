@@ -39,6 +39,8 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 - **Planilha:** textos digitados por participantes são gravados como texto puro (sem injeção de fórmula) e escapados nos e-mails.
 - **PIX:** qualquer alteração da chave, titular, banco ou do e-mail de notificação gera alerta enviado ao e-mail **anterior** (e ao novo, se mudou).
 - **Senha do organizador:** só na propriedade do script `AdminPass` (nunca no repositório nem na planilha).
+- **Sessões assinadas (HMAC-SHA256):** a senha do organizador só é usada no login, que devolve um passe válido por 8 h (o navegador guarda só o passe). O login do participante devolve um passe de 30 dias, e as ações dele usam o ID que está dentro do passe. O segredo fica na propriedade do script `SessionSecret` (criada sozinha); **apagar ou trocar essa propriedade derruba todas as sessões**.
+- **Backup diário:** execute `instalarBackupDiario()` uma vez no editor do Apps Script. Toda madrugada (3h) uma cópia da planilha vai para a pasta “Backups - Bolão Mega da Virada” no Drive; ficam as 7 mais recentes.
 
 ---
 

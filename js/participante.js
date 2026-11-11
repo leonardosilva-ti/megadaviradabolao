@@ -126,7 +126,7 @@ export async function login(form) {
   if (!res.success) return toast(res.message, "error");
 
   form.reset();
-  await entrar(res.user, `Bem-vindo(a) de volta, ${firstName(res.user.name)}!`);
+  await entrar({ ...res.user, token: res.token }, `Bem-vindo(a) de volta, ${firstName(res.user.name)}!`);
 }
 
 export async function register(form) {
@@ -143,7 +143,7 @@ export async function register(form) {
   if (!res.success) return toast(res.message, "error");
 
   form.reset();
-  await entrar(res.user, `Cadastro realizado, ${firstName(res.user.name)}!`);
+  await entrar({ ...res.user, token: res.token }, `Cadastro realizado, ${firstName(res.user.name)}!`);
 }
 
 async function entrar(user, mensagem) {
@@ -159,6 +159,7 @@ export async function abrirPainelOuWizard() {
   renderDashboard();
   showView("view-dashboard");
   const ok = await refreshDashboard();
+  if (!state.user) return; // sessão expirou durante o carregamento: já voltou para o login
   const qtdJogos = ok ? state.dashboard.myGames.length : (state.user.hasGames ? TOTAL_JOGOS : 0);
   if (qtdJogos < TOTAL_JOGOS && podeAlterarJogos()) startWizard();
 }
@@ -167,10 +168,10 @@ export async function abrirPainelOuWizard() {
 
 /** Recarrega os dados do painel. Retorna true se deu certo. */
 export async function refreshDashboard(button) {
-  if (!state.user?.id) return false;
-  const res = await withLoading(button, () => api("getDashboardData", { participantId: state.user.id }));
+  if (!state.user?.token) return false;
+  const res = await withLoading(button, () => api("getDashboardData", { token: state.user.token }));
   if (!res.success) {
-    toast(res.message || "Não foi possível carregar seus dados.", "error");
+    if (!res.sessaoExpirada) toast(res.message || "Não foi possível carregar seus dados.", "error");
     return false;
   }
   state.dashboard = {
@@ -534,7 +535,7 @@ export async function enviarJogos(button) {
   if (!podeAlterarJogos()) return toast(avisoPrazo(), "error");
   const { editando } = state.wizard;
   const res = await withLoading(button, () =>
-    api("saveGames", { participantId: state.user.id, games: state.wizard.games }));
+    api("saveGames", { token: state.user.token, games: state.wizard.games }));
   if (!res.success) return toast(res.message, "error");
 
   resetWizard();
@@ -617,7 +618,7 @@ export async function copiarPix() {
 /** Envia o aviso de pagamento ao organizador (sem valor = tudo o que falta). */
 async function enviarAviso(button, valor) {
   const res = await withLoading(button, () =>
-    api("confirmPayment", { participantId: state.user.id, ...(valor ? { valor } : {}) }));
+    api("confirmPayment", { token: state.user.token, ...(valor ? { valor } : {}) }));
   if (!res.success) {
     toast(res.message, "error");
     return false;
