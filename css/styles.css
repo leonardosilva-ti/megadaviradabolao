@@ -474,7 +474,9 @@ details.disclosure > .disclosure__body { margin-top: 10px; }
 .aviso-pag:hover { border-style: solid; }
 
 /* Botão de modo claro/escuro */
-.btn--theme { width: 34px; padding: 0; font-size: 16px; }
+.btn--theme { gap: 6px; }
+.btn--theme [data-theme-icon] { font-size: 15px; line-height: 1; }
+@media (max-width: 640px) { .btn--theme { width: 34px; padding: 0; } }
 
 /* Botão redondo "i" de informação */
 .btn-info {

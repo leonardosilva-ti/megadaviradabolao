@@ -27,6 +27,8 @@ function aplicar() {
     btn.title = escuro ? "Modo claro" : "Modo escuro";
     const icone = btn.querySelector("[data-theme-icon]");
     if (icone) icone.textContent = escuro ? "☀️" : "🌙";
+    const rotulo = btn.querySelector("[data-theme-label]");
+    if (rotulo) rotulo.textContent = escuro ? "Modo claro" : "Modo escuro";
   });
 }
 
