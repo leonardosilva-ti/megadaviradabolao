@@ -6,7 +6,7 @@
  * chega aos participantes na próxima abertura do app.
  */
 
-const CACHE_NAME = "mega-bolao-v17";
+const CACHE_NAME = "mega-bolao-v18";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
@@ -23,6 +23,7 @@ const STATIC_ASSETS = [
   "./js/convite.js",
   "./js/conferencia.js",
   "./js/tema.js",
+  "./js/tema-inicial.js",
   "./js/participante.js",
   "./js/main.js",
   "./js/admin.js",
