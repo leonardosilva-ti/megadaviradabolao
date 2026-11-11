@@ -4,6 +4,7 @@ import { state, setAdminPassword, clearSession } from "./state.js";
 import { $, $$, showView, toast, notify, withLoading, confirmDialog, openDialog, gameCard, balls, empty, buildPicker, updatePicker } from "./ui.js";
 import { html, render, onlyDigits, pad2, formatPhone, formatBRL, toNumber, parseDezenas, completarAleatorio, downloadFile } from "./utils.js";
 import { gerarListaCompleta } from "./pdf.js";
+import { conferirJogos, descreverFaixas, lerSorteadas } from "./conferencia.js";
 
 const isPago = (p) => String(p?.paymentStatus ?? "").toLowerCase() === "pago";
 const senha = () => state.adminPassword;
@@ -581,42 +582,13 @@ export async function exportarPdf(button) {
 
 // ---------- Conferência do resultado ----------
 
-const comb = (n, k) => {
-  if (k < 0 || k > n) return 0;
-  let r = 1;
-  for (let i = 1; i <= k; i++) r = (r * (n - k + i)) / i;
-  return Math.round(r);
-};
-
-/**
- * Quantas apostas de 6 dezenas premiadas um jogo de `n` dezenas com `acertos` equivale.
- * Ex.: jogo de 8 dezenas com 5 acertos = 3 quinas + 15 quadras.
- */
-function faixas(n, acertos) {
-  return {
-    sena: comb(acertos, 6),
-    quina: comb(acertos, 5) * comb(n - acertos, 1),
-    quadra: comb(acertos, 4) * comb(n - acertos, 2),
-  };
-}
-
-const descreverFaixas = (f) => [
-  f.sena && `${f.sena} sena${f.sena > 1 ? "s" : ""}`,
-  f.quina && `${f.quina} quina${f.quina > 1 ? "s" : ""}`,
-  f.quadra && `${f.quadra} quadra${f.quadra > 1 ? "s" : ""}`,
-].filter(Boolean).join(" + ");
-
 export function renderAvisoConferencia() {
   $("#conf-aviso").hidden = statusBolao().fechado;
 }
 
 export function conferir(form) {
-  const nums = form.elements.sorteadas.value.split(/[^\d]+/).filter(Boolean).map(Number);
-  if (nums.length !== 6) return toast("Informe exatamente as 6 dezenas sorteadas.", "error");
-  if (nums.some((n) => n < 1 || n > 60)) return toast("As dezenas devem estar entre 01 e 60.", "error");
-  if (new Set(nums).size !== 6) return toast("Há dezenas repetidas no resultado.", "error");
-
-  const sorteadas = new Set(nums.map(pad2));
+  const { sorteadas, erro } = lerSorteadas(form.elements.sorteadas.value);
+  if (erro) return toast(erro, "error");
   const { participants, bolaoGames } = dados();
 
   // Jogos efetivamente registrados: os oficiais + os de quem pagou.
@@ -631,17 +603,7 @@ export function conferir(form) {
     }))),
   ];
 
-  const premiados = jogos
-    .map((j) => {
-      const acertos = j.dezenas.filter((d) => sorteadas.has(d)).length;
-      return { ...j, acertos, faixas: faixas(j.dezenas.length, acertos) };
-    })
-    .filter((j) => j.acertos >= 4)
-    .sort((a, b) => b.acertos - a.acertos || b.dezenas.length - a.dezenas.length);
-
-  const total = premiados.reduce((t, j) => ({
-    sena: t.sena + j.faixas.sena, quina: t.quina + j.faixas.quina, quadra: t.quadra + j.faixas.quadra,
-  }), { sena: 0, quina: 0, quadra: 0 });
+  const { premiados, total } = conferirJogos(jogos, sorteadas);
 
   const resultado = html`<p class="section-title">Resultado conferido</p>${balls([...sorteadas].sort(), { variant: "gold" })}`;
 
@@ -672,7 +634,19 @@ function renderConfig() {
   form.elements.pixKey.value = c.pixKey || "";
   form.elements.pixTipo.value = c.pixTipo || "E-mail";
   form.elements.pixNome.value = c.pixNome || "";
+  form.elements.pixBanco.value = c.pixBanco || "";
   form.elements.notificationEmail.value = c.notificationEmail || "";
+  form.elements.valorTotal.value = formatBRL(valores().total).replace(/^R\$\s*/, "");
+  atualizarDivisaoCota();
+}
+
+/** Mostra como a cota digitada se divide entre os 5 jogos e o fundo do grupo. */
+export function atualizarDivisaoCota() {
+  const total = lerValor($("#cfg-valor").value);
+  const jogos = JOGOS_POR_PARTICIPANTE * COTA.precoAposta;
+  $("#cfg-valor-divisao").textContent = total >= jogos
+    ? `${formatBRL(jogos)} pagam os 5 jogos do participante e ${formatBRL(total - jogos)} vão para o fundo dos jogos de 7, 8 e 9 dezenas.`
+    : `A cota precisa ser de pelo menos ${formatBRL(jogos)} (5 jogos de ${formatBRL(COTA.precoAposta)}).`;
 }
 
 export async function salvarPix(form) {
@@ -680,14 +654,26 @@ export async function salvarPix(form) {
     pixKey: form.elements.pixKey.value.trim(),
     pixTipo: form.elements.pixTipo.value,
     pixNome: form.elements.pixNome.value.trim(),
+    pixBanco: form.elements.pixBanco.value.trim(),
     notificationEmail: form.elements.notificationEmail.value.trim(),
+    valorTotal: lerValor(form.elements.valorTotal.value),
   };
+  const minimo = JOGOS_POR_PARTICIPANTE * COTA.precoAposta;
   if (!payload.pixKey) return toast("Informe a chave PIX.", "error");
+  if (!(payload.valorTotal >= minimo)) return toast(`O valor da cota deve ser de pelo menos ${formatBRL(minimo)}.`, "error");
   if (payload.notificationEmail && !form.elements.notificationEmail.checkValidity()) return toast("E-mail de notificação inválido.", "error");
+
+  const cotaAntes = valores().total;
+  if (payload.valorTotal !== cotaAntes && !(await confirmDialog(
+    `Alterar a cota de ${formatBRL(cotaAntes)} para ${formatBRL(payload.valorTotal)}? Quem ainda não pagou passa a ver o novo valor; quem já está como "Pago" continua pago.`,
+    { title: "Alterar valor da cota", okText: "Alterar cota" }))) return;
 
   const res = await withLoading(form.querySelector('[type="submit"]'), () => api("adminSavePixConfig", { password: senha(), ...payload }));
   notify(res, "Configurações salvas!");
-  if (res.success) Object.assign(dados().config, payload, res.config ?? {});
+  if (!res.success) return;
+  Object.assign(dados().config, payload, res.config ?? {});
+  renderMetricas(); // o valor da cota muda arrecadado/fundo e o "falta" dos parciais
+  renderTabela();
 }
 
 // ---------- Abas ----------

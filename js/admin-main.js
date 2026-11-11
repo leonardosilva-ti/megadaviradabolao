@@ -68,6 +68,7 @@ function bindEvents() {
 
   document.addEventListener("input", (e) => {
     if (e.target.id === "adm-busca") admin.renderTabela();
+    else if (e.target.id === "cfg-valor") admin.atualizarDivisaoCota();
   });
   document.addEventListener("change", (e) => {
     if (e.target.id === "adm-filtro") admin.renderTabela();

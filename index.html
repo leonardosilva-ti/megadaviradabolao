@@ -93,10 +93,10 @@
           <span class="notice__icon" aria-hidden="true">ℹ️</span>
           <div>
             <p><strong>Como funciona o nosso bolão</strong></p>
-            <p>A cota é de <strong data-valor="total">R$ 45,00</strong>, dividida assim:</p>
+            <p>A cota é de <strong data-valor="total">R$ 60,00</strong>, dividida assim:</p>
             <dl style="margin:6px 0 0">
               <div class="kv"><dt>Seus 5 jogos individuais (5 × R$ 6,00) — você escolhe as 6 dezenas de cada um</dt><dd data-valor="jogos">R$ 30,00</dd></div>
-              <div class="kv"><dt>Fundo do grupo para <strong>jogos especiais de 7, 8 ou 9 dezenas</strong> (a quantidade depende do total arrecadado)</dt><dd data-valor="fundo">R$ 15,00</dd></div>
+              <div class="kv"><dt>Fundo do grupo para <strong>jogos especiais de 7, 8 ou 9 dezenas</strong> (a quantidade depende do total arrecadado)</dt><dd data-valor="fundo">R$ 30,00</dd></div>
             </dl>
             <p>Todos os jogos registrados ficam disponíveis no painel para conferência de todos.</p>
             <p>⏰ O pagamento pode ser feito agora ou depois, até <strong data-edicao="prazoPagamento">28/12 às 12h</strong>. Em <strong data-edicao="registroJogos">28/12 às 18h</strong> os jogos são registrados e o bolão é fechado.</p>
@@ -194,13 +194,13 @@
       <div class="card card--brand stack narrow">
         <div class="center stack-sm">
           <p class="section-title" id="pay-preco-label">Valor da cota</p>
-          <p class="price" id="pay-preco">R$ 45,00</p>
+          <p class="price" id="pay-preco">R$ 60,00</p>
           <p class="small" id="pay-parcial" hidden></p>
         </div>
 
         <dl style="margin:0">
           <div class="kv"><dt>Seus 5 jogos individuais (5 × R$ 6,00)</dt><dd data-valor="jogos">R$ 30,00</dd></div>
-          <div class="kv"><dt>Fundo do grupo — jogos de 7, 8 ou 9 dezenas</dt><dd data-valor="fundo">R$ 15,00</dd></div>
+          <div class="kv"><dt>Fundo do grupo — jogos de 7, 8 ou 9 dezenas</dt><dd data-valor="fundo">R$ 30,00</dd></div>
         </dl>
 
         <div class="field">
@@ -251,6 +251,24 @@
 
       <div id="dash-avisos" class="stack-sm" hidden></div>
 
+      <!-- Conferência + comprovante completo: liberados depois do fechamento do bolão -->
+      <article class="card stack" id="dash-conferencia" hidden>
+        <header class="card__header" style="margin:0">
+          <h2 class="card__title">🏆 Conferência do resultado</h2>
+          <button class="btn btn--outline btn--sm" data-action="download-all-games">📄 Baixar todos os jogos</button>
+        </header>
+        <p class="small muted">O bolão está fechado e os jogos estão definitivos. Depois do sorteio, digite as 6 dezenas sorteadas para conferir os seus jogos, os jogos especiais do bolão e os jogos dos outros participantes. Aparecem os jogos com <strong>4 ou mais acertos</strong>.</p>
+        <p class="notice notice--warn small" id="conf-meus-fora" hidden>Seus jogos não entram na conferência porque o pagamento da cota não foi confirmado antes do fechamento.</p>
+        <form id="form-conf-participante" class="field" novalidate>
+          <label class="label" for="conf-part-dezenas">6 dezenas sorteadas</label>
+          <div class="input-group">
+            <input class="input mono" id="conf-part-dezenas" name="sorteadas" type="text" inputmode="numeric" placeholder="05, 14, 23, 32, 48, 57" autocomplete="off">
+            <button type="submit" class="btn btn--warn">Conferir</button>
+          </div>
+        </form>
+        <div id="conf-part-resultado" class="stack-sm"></div>
+      </article>
+
       <div class="grid-3">
         <article class="card card--fill">
           <header class="card__header" style="flex-wrap:wrap">
@@ -269,7 +287,7 @@
             <h2 class="card__title">Jogos especiais do bolão</h2>
             <span class="card__icon" aria-hidden="true">🌟</span>
           </header>
-          <p class="small muted" style="margin-bottom:12px">Apostas de 7, 8 ou 9 dezenas feitas com o fundo do grupo (<span data-valor="fundo">R$ 15,00</span> de cada cota).</p>
+          <p class="small muted" style="margin-bottom:12px">Apostas de 7, 8 ou 9 dezenas feitas com o fundo do grupo (<span data-valor="fundo">R$ 30,00</span> de cada cota).</p>
           <div id="dash-oficiais" class="stack-sm"></div>
         </article>
 
@@ -311,9 +329,9 @@
   <dialog class="modal" id="dialog-regras">
     <div class="modal__header"><h3 class="modal__title">📜 Regras do bolão</h3></div>
     <div class="modal__body stack-sm small">
-      <p>Cada participante paga uma cota de <strong data-valor="total">R$ 45,00</strong> via PIX:</p>
+      <p>Cada participante paga uma cota de <strong data-valor="total">R$ 60,00</strong> via PIX:</p>
       <p><strong data-valor="jogos">R$ 30,00</strong> pagam os seus <strong>5 jogos</strong> de 6 dezenas, escolhidos por você.</p>
-      <p><strong data-valor="fundo">R$ 15,00</strong> vão para o <strong>fundo do grupo</strong>, usado pelo organizador para jogos especiais de 7, 8 ou 9 dezenas.</p>
+      <p><strong data-valor="fundo">R$ 30,00</strong> vão para o <strong>fundo do grupo</strong>, usado pelo organizador para jogos especiais de 7, 8 ou 9 dezenas.</p>
       <p>O pagamento vai até <strong data-edicao="prazoPagamento">28/12 às 12h</strong>. Em <strong data-edicao="registroJogos">28/12 às 18h</strong> os jogos são registrados e o bolão é fechado — só participa quem tiver o pagamento confirmado. O registro é antecipado por causa da instabilidade do sistema das loterias nos dias 30 e 31/12.</p>
     </div>
     <div class="modal__footer"><button class="btn btn--info" data-action="close-dialog">Entendi</button></div>

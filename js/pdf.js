@@ -93,6 +93,119 @@ export function gerarComprovante(user, games) {
 }
 
 /**
+ * Comprovante com todos os jogos do bolão (liberado ao participante depois do fechamento):
+ * os jogos dele, os jogos especiais do organizador e os jogos dos demais participantes (sem nomes).
+ */
+export function gerarComprovanteCompleto({ user, meus, meusValem, oficiais, outros }) {
+  const doc = novoDocumento();
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+  const m = 14;
+  let pagina = 1;
+  const total = (meusValem ? meus.length : 0) + oficiais.length + outros.length;
+
+  cabecalho(doc, "Jogos do Bolão da Mega da Virada",
+    `Sorteio ${EDICAO.dataSorteio} · ${total} jogo(s) registrado(s) · Gerado em ${new Date().toLocaleString("pt-BR")}`);
+
+  const rodape = () => {
+    doc.setTextColor(...CINZA);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text("Bolão privado entre família e amigos, sem vínculo com a Caixa Econômica Federal.", m, h - 8);
+    doc.text(`Página ${pagina}`, w - m, h - 8, { align: "right" });
+  };
+  const novaPaginaSePreciso = (altura) => {
+    if (y + altura <= h - 16) return;
+    rodape();
+    doc.addPage();
+    pagina++;
+    y = 16;
+  };
+
+  let y = 44;
+  doc.setFillColor(...VERDE_CLARO);
+  doc.roundedRect(m, y, w - m * 2, 16, 3, 3, "F");
+  doc.setTextColor(...CINZA);
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  doc.text("COMPROVANTE DE", m + 5, y + 6);
+  doc.setTextColor(20, 30, 20);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text(String(user?.name || "Participante"), m + 5, y + 12.5);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(formatPhone(user?.phone), w - m - 5, y + 12.5, { align: "right" });
+  y += 26;
+
+  const titulo = (texto, cor = VERDE) => {
+    novaPaginaSePreciso(14);
+    doc.setTextColor(...cor);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(texto, m, y);
+    y += 3;
+    doc.setDrawColor(...cor);
+    doc.setLineWidth(0.4);
+    doc.line(m, y, w - m, y);
+    y += 6;
+  };
+
+  /** Uma linha por jogo: rótulo à esquerda e dezenas em bolinhas. */
+  const linhaJogo = (rotulo, dezenas, cor) => {
+    novaPaginaSePreciso(10);
+    doc.setTextColor(...CINZA);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.text(rotulo, m + 1, y + 1.2);
+    let x = m + 46;
+    dezenas.forEach((n) => {
+      doc.setFillColor(...cor);
+      doc.circle(x, y, 3.6, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8.5);
+      doc.text(n, x, y + 1.2, { align: "center" });
+      x += 9.2;
+    });
+    y += 9;
+  };
+
+  titulo("Seus jogos");
+  if (!meus.length) {
+    doc.setTextColor(...CINZA); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    doc.text("Você não cadastrou jogos.", m + 1, y); y += 8;
+  } else {
+    if (!meusValem) {
+      doc.setTextColor(180, 35, 24); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.text("Atenção: seus jogos NÃO foram registrados (pagamento não confirmado antes do fechamento).", m + 1, y); y += 7;
+    }
+    meus.forEach((g, i) => linhaJogo(`JOGO ${g.gameNumber || i + 1}`, parseDezenas(g.dezenas), meusValem ? [22, 163, 74] : [160, 160, 160]));
+  }
+  y += 3;
+
+  titulo(`Jogos especiais do bolão (${oficiais.length})`, OURO);
+  if (!oficiais.length) {
+    doc.setTextColor(...CINZA); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    doc.text("Nenhum jogo especial cadastrado.", m + 1, y); y += 8;
+  }
+  oficiais.forEach((g, i) => {
+    const dz = parseDezenas(g.dezenas);
+    linhaJogo(`ESPECIAL #${i + 1} (${dz.length})`, dz, [202, 138, 4]);
+  });
+  y += 3;
+
+  titulo(`Jogos dos demais participantes (${outros.length})`);
+  if (!outros.length) {
+    doc.setTextColor(...CINZA); doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+    doc.text("Nenhum outro participante com pagamento confirmado.", m + 1, y); y += 8;
+  }
+  outros.forEach((g, i) => linhaJogo(`GRUPO #${i + 1}`, parseDezenas(g.dezenas), [21, 128, 61]));
+
+  rodape();
+  doc.save(`Jogos_do_Bolao_${nomeArquivo(user?.name)}.pdf`);
+}
+
+/**
  * Lista com todos os jogos (admin).
  * @param {{ participantName: string, dezenas: string, oficial?: boolean, paymentStatus?: string }[]} jogos
  */

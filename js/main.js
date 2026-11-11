@@ -27,6 +27,7 @@ const actions = {
   "copy-pix": () => p.copiarPix(),
   "notify-payment": (el) => p.avisarPagamento(el),
   "download-receipt": () => p.baixarComprovante(),
+  "download-all-games": () => p.baixarTodosOsJogos(),
 
   "start-wizard": () => p.startWizard(),
   "edit-games": () => p.editarJogos(),
@@ -43,6 +44,7 @@ const actions = {
 const forms = {
   "form-login": p.login,
   "form-register": p.register,
+  "form-conf-participante": p.conferirResultado,
 };
 
 function bindEvents() {

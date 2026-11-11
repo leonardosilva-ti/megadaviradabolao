@@ -7,7 +7,8 @@ import {
   html, render, onlyDigits, pad2, firstName, formatPhone, formatBRL, toNumber, isValidBrDate,
   parseDezenas, completarAleatorio, indiceDuplicado, copyToClipboard,
 } from "./utils.js";
-import { gerarComprovante } from "./pdf.js";
+import { gerarComprovante, gerarComprovanteCompleto } from "./pdf.js";
+import { conferirJogos, descreverFaixas, lerSorteadas } from "./conferencia.js";
 
 const submitBtn = (form) => form.querySelector('[type="submit"]');
 const isPago = (u) => String(u?.paymentStatus ?? "").toLowerCase() === "pago";
@@ -212,6 +213,8 @@ export function renderDashboard() {
           <button class="btn btn--primary btn--sm" data-action="start-wizard">Escolher meus ${TOTAL_JOGOS} jogos</button></div>`
       : empty(carregado ? "Nenhum jogo cadastrado." : "Carregando…"));
 
+  renderConferencia(carregado);
+
   // Jogos especiais do bolão
   render($("#dash-oficiais"), d.bolaoGames.length
     ? d.bolaoGames.map((g, i) => {
@@ -228,6 +231,76 @@ export function renderDashboard() {
   render($("#dash-outros"), d.otherGames.length
     ? d.otherGames.map((g, i) => gameCard(parseDezenas(g.dezenas), `#${i + 1}`, { size: "xs", variant: "muted" }))
     : html`<p class="small muted">Ainda não há jogos de outros participantes.</p>`);
+}
+
+// ---------- Depois do fechamento: conferência e comprovante com todos os jogos ----------
+
+/** Jogos que valem no bolão, como o participante os vê (os dele só se pagou). */
+function jogosDoBolao() {
+  const d = state.dashboard ?? { myGames: [], otherGames: [], bolaoGames: [] };
+  const meusValem = isPago(state.user);
+  return {
+    meusValem,
+    meus: [...d.myGames].sort((a, b) => a.gameNumber - b.gameNumber),
+    oficiais: d.bolaoGames,
+    outros: d.otherGames,
+  };
+}
+
+function renderConferencia(carregado) {
+  const { fechado } = statusBolao();
+  const card = $("#dash-conferencia");
+  card.hidden = !(carregado && fechado);
+  if (card.hidden) return;
+  const { meusValem, meus } = jogosDoBolao();
+  $("#conf-meus-fora").hidden = meusValem || meus.length === 0;
+}
+
+export function conferirResultado(form) {
+  const { sorteadas, erro } = lerSorteadas(form.elements.sorteadas.value);
+  if (erro) return toast(erro, "error");
+
+  const { meusValem, meus, oficiais, outros } = jogosDoBolao();
+  const jogos = [
+    ...(meusValem ? meus.map((g, i) => ({ dezenas: parseDezenas(g.dezenas), meu: true, label: `Seu jogo ${g.gameNumber || i + 1}` })) : []),
+    ...oficiais.map((g, i) => {
+      const dezenas = parseDezenas(g.dezenas);
+      return { dezenas, oficial: true, label: `Jogo especial #${i + 1} · ${dezenas.length} dezenas` };
+    }),
+    ...outros.map((g, i) => ({ dezenas: parseDezenas(g.dezenas), label: `Jogo do grupo #${i + 1}` })),
+  ];
+  const { premiados, total } = conferirJogos(jogos, sorteadas);
+  const meusPremiados = premiados.filter((j) => j.meu).length;
+
+  const resultado = html`<p class="section-title">Resultado conferido</p>${balls([...sorteadas].sort(), { variant: "gold" })}`;
+  render($("#conf-part-resultado"), premiados.length
+    ? html`${resultado}
+      <div class="notice notice--success"><span class="notice__icon" aria-hidden="true">🏆</span><div>
+        <p><strong>${premiados.length} jogo(s) do bolão premiado(s)!</strong> Total: ${descreverFaixas(total)}.</p>
+        ${meusPremiados ? html`<p>🎉 <strong>${meusPremiados === 1 ? "Um deles é seu!" : `${meusPremiados} deles são seus!`}</strong></p>` : ""}
+        <p class="small muted">${jogos.length} jogos conferidos. Confira também o resultado oficial no site da Caixa.</p>
+      </div></div>
+      ${premiados.map((j) => gameCard(j.dezenas, j.label, {
+        size: "sm",
+        gold: j.oficial,
+        hits: sorteadas,
+        extra: html`<span class="badge ${j.acertos === 6 ? "badge--gold" : "badge--brand"}">${j.meu ? "⭐ " : ""}${j.acertos} acertos · ${descreverFaixas(j.faixas)}</span>`,
+      }))}`
+    : html`${resultado}
+      <div class="notice"><span class="notice__icon" aria-hidden="true">🔎</span><div>
+        <p><strong>Nenhum jogo com 4 ou mais acertos.</strong></p>
+        <p class="small muted">${jogos.length} jogos conferidos. Confira também o resultado oficial no site da Caixa.</p>
+      </div></div>`);
+}
+
+export function baixarTodosOsJogos() {
+  if (!statusBolao().fechado) return toast("O comprovante com todos os jogos fica disponível depois do fechamento do bolão.", "info");
+  const { meusValem, meus, oficiais, outros } = jogosDoBolao();
+  try {
+    gerarComprovanteCompleto({ user: state.user, meus, meusValem, oficiais, outros });
+  } catch (e) {
+    toast(e.message, "error");
+  }
 }
 
 export function baixarComprovante() {
@@ -418,7 +491,7 @@ export async function enviarJogos(button) {
 
 function pixAtual() {
   const c = state.config ?? {};
-  return { chave: String(c.pixKey ?? "").trim(), tipo: c.pixTipo || "Chave PIX", titular: c.pixNome || "" };
+  return { chave: String(c.pixKey ?? "").trim(), tipo: c.pixTipo || "Chave PIX", titular: c.pixNome || "", banco: String(c.pixBanco ?? "").trim() };
 }
 
 export async function abrirPagamento() {
@@ -428,7 +501,7 @@ export async function abrirPagamento() {
   renderValores();
   $("#pay-pix").value = pix.chave || "Não foi possível carregar a chave. Toque em ↻ Atualizar no painel.";
   $("#pay-pix-label").textContent = `Chave PIX (${pix.tipo})`;
-  $("#pay-titular").textContent = pix.titular ? `Titular: ${pix.titular}` : "";
+  $("#pay-titular").textContent = [pix.titular && `Titular: ${pix.titular}`, pix.banco && `Instituição: ${pix.banco}`].filter(Boolean).join(" · ");
   $("[data-action='copy-pix']").disabled = !pix.chave;
 
   const pago = isPago(state.user);
