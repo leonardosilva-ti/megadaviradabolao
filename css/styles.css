@@ -465,6 +465,12 @@ details.disclosure > .disclosure__body { margin-top: 10px; }
   padding: 8px 8px 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);
 }
 
+/* Caixa "Tirar dúvidas no WhatsApp" na tela de cadastro */
+.duvidas {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px;
+  padding: 12px 14px; border-radius: var(--radius); background: var(--surface-2); border: 1px dashed var(--border-strong);
+}
+
 /* Aviso "informou R$ X" na tabela do organizador */
 .aviso-pag {
   display: flex; align-items: center; gap: 4px; margin-top: 6px; padding: 2px 8px;

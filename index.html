@@ -81,7 +81,8 @@
 
         <div class="stack-sm center" style="margin-top:20px">
           <p class="small">Primeiro acesso? <button class="btn btn--link" data-action="go-register">Cadastre-se aqui</button></p>
-          <a class="btn btn--link small muted" href="admin.html">Acesso do organizador</a>
+          <div><a class="btn btn--whatsapp btn--sm" data-whatsapp target="_blank" rel="noopener" hidden>💬 Tirar dúvidas no WhatsApp</a></div>
+          <div><a class="btn btn--link small muted" href="admin.html">Acesso do organizador</a></div>
         </div>
       </div>
     </section>
@@ -136,6 +137,11 @@
         <div class="row row--between">
           <button type="button" class="btn btn--ghost" data-action="go-login">← Voltar</button>
           <button type="submit" class="btn btn--primary">Cadastrar e escolher jogos</button>
+        </div>
+
+        <div class="duvidas" data-whatsapp-box hidden>
+          <p class="small">Ficou com alguma dúvida antes de se cadastrar? Fale direto com o organizador.</p>
+          <a class="btn btn--whatsapp btn--sm" data-whatsapp target="_blank" rel="noopener" hidden>💬 Tirar dúvidas no WhatsApp</a>
         </div>
       </form>
     </section>
@@ -233,6 +239,7 @@
           <button class="btn btn--outline btn--block" id="pay-depois" data-action="pay-later">🕒 Pagar depois</button>
           <p class="hint center" id="pay-depois-hint">Sem problema: o PIX fica disponível no seu painel até o prazo.</p>
           <button class="btn btn--ghost btn--block" id="pay-voltar" data-action="go-dashboard" hidden>Ir para o meu painel →</button>
+          <a class="btn btn--whatsapp btn--block" data-whatsapp target="_blank" rel="noopener" hidden>💬 Dúvidas sobre o pagamento? Fale no WhatsApp</a>
         </div>
       </div>
     </section>
@@ -245,7 +252,10 @@
             <h1 class="page-title">Olá, <span id="dash-nome"></span>!</h1>
             <p class="page-subtitle small" id="dash-telefone"></p>
           </div>
-          <button class="btn btn--ghost btn--sm" data-action="refresh-dashboard">↻ Atualizar</button>
+          <div class="row row--wrap">
+            <a class="btn btn--ghost btn--sm" data-whatsapp target="_blank" rel="noopener" hidden>💬 Tirar dúvidas</a>
+            <button class="btn btn--ghost btn--sm" data-action="refresh-dashboard">↻ Atualizar</button>
+          </div>
         </div>
         <div class="grid-stats" style="margin-top:18px">
           <div class="stat"><p class="stat__label">Pagamento</p><p class="stat__value" id="dash-pagamento">—</p></div>
