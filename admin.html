@@ -249,6 +249,33 @@
     <div class="modal__footer"><button class="btn btn--outline" data-action="close-dialog">Fechar</button></div>
   </dialog>
 
+  <dialog class="modal" id="dialog-pagamentos">
+    <div class="modal__header"><h3 class="modal__title" id="pag-titulo">Valores pagos</h3></div>
+    <div class="modal__body stack">
+      <div id="pag-resumo" class="stack-sm"></div>
+      <p class="notice notice--success small" id="pag-quitado" hidden>✅ Cota quitada. Para corrigir, remova um lançamento abaixo.</p>
+      <form id="form-pagamento" class="stack-sm" novalidate>
+        <div class="grid-2" style="gap:10px">
+          <div class="field">
+            <label class="label" for="pag-valor">Valor recebido</label>
+            <input class="input mono" id="pag-valor" name="valor" type="text" inputmode="decimal" autocomplete="off" maxlength="12">
+            <span class="hint">Em branco = quita o que falta.</span>
+          </div>
+          <div class="field">
+            <label class="label" for="pag-obs">Observação <span class="muted">(opcional)</span></label>
+            <input class="input" id="pag-obs" name="observacao" type="text" maxlength="200" placeholder="Ex.: 2ª parte via PIX">
+          </div>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">💵 Lançar pagamento</button>
+      </form>
+      <div class="stack-sm">
+        <p class="section-title">Histórico</p>
+        <ul class="pay-list" id="pag-historico"></ul>
+      </div>
+    </div>
+    <div class="modal__footer"><button class="btn btn--outline" data-action="close-dialog">Fechar</button></div>
+  </dialog>
+
   <dialog class="modal" id="dialog-confirm">
     <div class="modal__header"><h3 class="modal__title" id="confirm-title">Confirmar</h3></div>
     <div class="modal__body small" id="confirm-message"></div>

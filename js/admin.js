@@ -117,7 +117,8 @@ function renderMetricas() {
   $("#m-total").textContent = participants.length;
   $("#m-pagos").textContent = pagos;
   $("#m-pendentes").textContent = participants.length - pagos;
-  $("#m-arrecadado").textContent = formatBRL(pagos * v.total);
+  // Soma o que entrou de fato, inclusive pagamentos parciais
+  $("#m-arrecadado").textContent = formatBRL(participants.reduce((t, p) => t + resumoPagamento(p).pago, 0));
   $("#m-fundo").textContent = formatBRL(pagos * v.fundo);
   $("#m-jogos").textContent = participants.filter(isPago).reduce((t, p) => t + (p.gamesCount || 0), 0) + bolaoGames.length;
   $("#m-fundo-label").textContent = `Fundo (${formatBRL(v.fundo)}/cota)`;
@@ -153,10 +154,11 @@ export function renderTabela() {
         <td style="min-width:170px"><strong>${p.name}</strong><br><span class="xsmall muted" style="white-space:nowrap">${formatPhone(p.phone)}</span></td>
         <td>${p.birthdate || "—"}</td>
         <td><span class="badge ${completo ? "badge--brand" : ""}">${p.gamesCount || 0} de ${JOGOS_POR_PARTICIPANTE}</span></td>
-        <td><span class="badge ${pago ? "badge--brand" : "badge--warn"}">${pago ? "Pago" : "Pendente"}</span></td>
+        <td>${celulaPagamento(p)}</td>
         <td><div class="actions">
           <button class="btn btn--sm ${pago ? "btn--outline" : "btn--primary"}" data-action="toggle-payment" data-id="${p.id}" data-status="${pago ? "Pendente" : "Pago"}">
             ${pago ? "↩ Voltar p/ pendente" : "✓ Dar baixa"}</button>
+          <button class="btn btn--ghost btn--sm" data-action="open-payments" data-id="${p.id}" title="Lançar valor pago (pagamento em partes)">💵 Valores</button>
           <button class="btn btn--ghost btn--sm" data-action="view-games" data-id="${p.id}">👁️ Jogos</button>
           <button class="btn btn--ghost btn--sm btn--trash" data-action="delete-participant" data-id="${p.id}" aria-label="Excluir ${p.name}" title="Excluir participante">${ICONE_LIXEIRA}</button>
         </div></td>
@@ -243,7 +245,11 @@ export async function darBaixaEmLote(button) {
   const ids = alvo.map((p) => p.id);
   const { res, feitos } = await withLoading(button, () => executarEmLote("adminUpdatePaymentBulk", "adminUpdatePayment", ids, { status: "Pago" }));
   const ok = new Set(feitos);
-  dados().participants.forEach((p) => { if (ok.has(p.id)) p.paymentStatus = "Pago"; });
+  dados().participants.forEach((p) => {
+    if (!ok.has(p.id)) return;
+    p.paymentStatus = "Pago";
+    if (res.pagamentos?.[p.id]) p.pagamentos = res.pagamentos[p.id];
+  });
   if (res.success) marcados.clear(); // concluído: começa uma seleção nova
   else feitos.forEach((id) => marcados.delete(id)); // deixa marcados só os que faltaram
   if (res.success) toast(`Baixa registrada para ${feitos.length} participante(s).`, "success");
@@ -276,14 +282,136 @@ export async function alternarPagamento(button) {
   const { id, status } = button.dataset;
   const p = dados().participants.find((x) => x.id === id);
   if (!p) return;
-  if (status === "Pendente" && !(await confirmDialog(`Voltar o pagamento de ${p.name} para pendente?`, { title: "Desfazer baixa", okText: "Voltar p/ pendente" }))) return;
+  if (status === "Pendente" && !(await confirmDialog(`Voltar o pagamento de ${p.name} para pendente? O valor registrado na baixa (quitação) é removido; os valores parciais lançados continuam.`, { title: "Desfazer baixa", okText: "Voltar p/ pendente" }))) return;
 
   const res = await withLoading(button, () => api("adminUpdatePayment", { password: senha(), participantId: id, status }));
   if (!res.success) return toast(res.message, "error");
   p.paymentStatus = status;
+  if (res.pagamentos) p.pagamentos = res.pagamentos;
   toast(status === "Pago" ? `Baixa registrada para ${p.name}.` : `${p.name} voltou para pendente.`, "success");
   renderMetricas();
   renderTabela();
+}
+
+// ---------- Valores pagos (pagamento em partes) ----------
+
+const money = (v) => Math.round((Number(v) || 0) * 100) / 100;
+
+/**
+ * Quanto o participante já pagou e quanto falta. Mesmo cálculo do code.gs:
+ * quem está "Pago" sem lançamentos (baixa antiga) conta como cota inteira.
+ */
+function resumoPagamento(p) {
+  const cota = valores().total;
+  const soma = money((p.pagamentos ?? []).reduce((t, x) => t + (Number(x.valor) || 0), 0));
+  const pago = isPago(p);
+  const valorPago = pago && soma < cota ? cota : soma;
+  return { cota, pago: valorPago, falta: pago ? 0 : money(Math.max(0, cota - soma)), parcial: !pago && soma > 0 };
+}
+
+function celulaPagamento(p) {
+  const r = resumoPagamento(p);
+  if (isPago(p)) return html`<span class="badge badge--brand">Pago</span>`;
+  if (r.parcial) {
+    return html`<span class="badge badge--info">Parcial</span>
+      <div class="xsmall muted" style="margin-top:4px;white-space:nowrap">${formatBRL(r.pago)} de ${formatBRL(r.cota)}<br>falta <strong>${formatBRL(r.falta)}</strong></div>`;
+  }
+  return html`<span class="badge badge--warn">Pendente</span>`;
+}
+
+/** "R$ 1.234,56", "25,5", "25.50" → número. */
+function lerValor(texto) {
+  let t = String(texto ?? "").replace(/[^\d,.]/g, "");
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  const n = Number(t);
+  return Number.isFinite(n) ? money(n) : NaN;
+}
+
+let pagamentosDe = null; // id do participante aberto no diálogo
+
+export function abrirPagamentos(button) {
+  const p = dados().participants.find((x) => x.id === button.dataset.id);
+  if (!p) return;
+  pagamentosDe = p.id;
+  const form = $("#form-pagamento");
+  form.reset();
+  renderPagamentos();
+  openDialog("dialog-pagamentos");
+  if (!form.hidden) form.elements.valor.focus();
+}
+
+function renderPagamentos() {
+  const p = dados().participants.find((x) => x.id === pagamentosDe);
+  if (!p) return;
+  const r = resumoPagamento(p);
+  const pct = r.cota ? Math.min(100, Math.round((r.pago / r.cota) * 100)) : 0;
+
+  $("#pag-titulo").textContent = `Valores de ${p.name}`;
+  render($("#pag-resumo"), html`
+    <div class="paybar" role="img" aria-label="${pct}% da cota pago"><span style="width:${pct}%"></span></div>
+    <dl style="margin:0">
+      <div class="kv"><dt>Valor da cota</dt><dd>${formatBRL(r.cota)}</dd></div>
+      <div class="kv"><dt>Já pago</dt><dd class="text-brand">${formatBRL(r.pago)}</dd></div>
+      <div class="kv"><dt>Falta pagar</dt><dd style="color:${r.falta ? "var(--warn)" : "inherit"}">${formatBRL(r.falta)}</dd></div>
+    </dl>`);
+
+  const form = $("#form-pagamento");
+  form.hidden = r.falta <= 0;
+  form.elements.valor.placeholder = formatBRL(r.falta);
+  $("#pag-quitado").hidden = r.falta > 0;
+
+  const lista = [...(p.pagamentos ?? [])].sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  const quando = (d) => { const dt = new Date(d); return Number.isNaN(dt.getTime()) ? "" : dt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); };
+  render($("#pag-historico"), lista.length
+    ? lista.map((x) => html`<li class="pay-item">
+        <div><strong>${formatBRL(x.valor)}</strong> <span class="badge ${x.tipo === "Quitação" ? "badge--brand" : "badge--info"}">${x.tipo || "Parcial"}</span>
+          <div class="xsmall muted">${quando(x.data)}${x.obs ? ` · ${x.obs}` : ""}</div></div>
+        <button type="button" class="btn btn--ghost btn--sm btn--trash" data-action="delete-payment" data-id="${x.id}" aria-label="Remover lançamento de ${formatBRL(x.valor)}" title="Remover lançamento">${ICONE_LIXEIRA}</button>
+      </li>`)
+    : html`<li class="xsmall muted">${isPago(p) ? "Baixa feita sem valores lançados (cota inteira)." : "Nenhum valor lançado ainda."}</li>`);
+}
+
+/** Atualiza o participante com a resposta do servidor e redesenha tudo que depende dele. */
+function aplicarRespostaPagamento(p, res) {
+  if (res.paymentStatus) p.paymentStatus = res.paymentStatus;
+  if (res.pagamentos) p.pagamentos = res.pagamentos;
+  renderPagamentos();
+  renderMetricas();
+  renderTabela();
+}
+
+export async function lancarPagamento(form) {
+  const p = dados().participants.find((x) => x.id === pagamentosDe);
+  if (!p) return;
+  const { falta } = resumoPagamento(p);
+  const valor = lerValor(form.elements.valor.value || falta);
+  if (!(valor > 0)) return toast("Informe um valor válido, por exemplo 20,00.", "error");
+  if (valor > falta) return toast(`O valor é maior que o pendente (${formatBRL(falta)}).`, "error");
+
+  const res = await withLoading(form.querySelector('[type="submit"]'), () => api("adminAddPayment", {
+    password: senha(), participantId: p.id, valor, observacao: form.elements.observacao.value.trim(),
+  }));
+  if (!res.success) {
+    const antigo = /não reconhecida/i.test(res.message ?? "");
+    return toast(antigo ? "Atualize o code.gs no Apps Script (nova versão) para lançar valores parciais." : res.message, "error");
+  }
+  form.reset();
+  toast(res.message || "Pagamento lançado.", "success");
+  aplicarRespostaPagamento(p, res);
+}
+
+export async function removerPagamento(button) {
+  const p = dados().participants.find((x) => x.id === pagamentosDe);
+  const item = p?.pagamentos?.find((x) => x.id === button.dataset.id);
+  if (!p || !item) return;
+  // A confirmação abre por cima do diálogo de valores (os dois ficam na camada superior).
+  if (!(await confirmDialog(`Remover o lançamento de ${formatBRL(item.valor)} de ${p.name}? Se o total ficar abaixo da cota, o pagamento volta para pendente.`,
+    { title: "Remover lançamento", okText: "Remover" }))) return;
+
+  const res = await withLoading(button, () => api("adminDeletePayment", { password: senha(), paymentId: item.id }));
+  if (!res.success) return toast(res.message, "error");
+  toast(res.message || "Lançamento removido.", "success");
+  aplicarRespostaPagamento(p, res);
 }
 
 export async function excluirParticipante(button) {

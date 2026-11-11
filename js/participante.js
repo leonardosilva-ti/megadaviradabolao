@@ -28,6 +28,18 @@ function statusBolao() {
   };
 }
 
+/**
+ * Situação do pagamento do participante (pode pagar a cota em partes).
+ * `valorPago`/`valorPendente` vêm do servidor; sem eles (Apps Script antigo), vale só o status.
+ */
+function situacaoPagamento(u = state.user) {
+  const total = valores().total;
+  if (isPago(u)) return { total, pago: total, falta: 0, parcial: false };
+  const pago = Math.max(0, Number(u?.valorPago) || 0);
+  const falta = u?.valorPendente !== undefined ? Math.max(0, Number(u.valorPendente) || 0) : Math.max(0, total - pago);
+  return { total, pago, falta, parcial: pago > 0 && falta > 0 };
+}
+
 const prazoEncerrado = () => Date.now() >= new Date(EDICAO.prazoAlteracao).getTime();
 
 /** Os jogos podem ser escolhidos/alterados enquanto o bolão estiver aberto e dentro do prazo. */
@@ -134,13 +146,17 @@ export function renderDashboard() {
   const d = state.dashboard ?? { myGames: [], otherGames: [], bolaoGames: [] };
   const { fechado, registrado } = statusBolao();
   const pago = isPago(u);
-  const informado = pagamentoInformado(u.id);
+  const sit = situacaoPagamento(u);
+  const informado = pagamentoInformado(u.id, sit.pago);
   const carregado = Boolean(state.dashboard);
 
   renderValores();
   $("#dash-nome").textContent = firstName(u.name);
   $("#dash-telefone").textContent = formatPhone(u.phone);
-  $("#dash-pagamento").textContent = pago ? "✅ Confirmado" : informado ? "⏳ Em conferência" : "⏳ Pendente";
+  $("#dash-pagamento").textContent = pago ? "✅ Confirmado"
+    : informado ? "⏳ Em conferência"
+    : sit.parcial ? `Falta ${formatBRL(sit.falta)}`
+    : "⏳ Pendente";
   $("#dash-participantes").textContent = carregado ? contarParticipantes(d) : "—";
   $("#dash-status").textContent = !carregado ? "—" : registrado ? "Registrado" : fechado ? "Fechado" : "Aberto";
 
@@ -158,16 +174,23 @@ export function renderDashboard() {
 
   if (carregado && !pago && fechado) {
     avisos.push(html`<div class="notice notice--danger"><span class="notice__icon" aria-hidden="true">⛔</span>
-      <p><strong>Você não está participando</strong>: o pagamento da cota não foi confirmado antes do fechamento do bolão.</p></div>`);
+      <p><strong>Você não está participando</strong>: o pagamento da cota não foi ${sit.parcial ? `completado (faltaram ${formatBRL(sit.falta)})` : "confirmado"} antes do fechamento do bolão.</p></div>`);
   } else if (carregado && !pago) {
     avisos.push(html`<div class="notice notice--warn"><span class="notice__icon" aria-hidden="true">💰</span><div class="grow stack-sm">
+      ${sit.parcial ? html`
+        <div class="stack-sm">
+          <p>Você já pagou <strong>${formatBRL(sit.pago)}</strong> de ${formatBRL(sit.total)}. <strong>Falta pagar ${formatBRL(sit.falta)}</strong>.</p>
+          <div class="paybar" role="img" aria-label="${Math.round((sit.pago / sit.total) * 100)}% da cota pago"><span style="width:${Math.min(100, Math.round((sit.pago / sit.total) * 100))}%"></span></div>
+        </div>` : ""}
       ${informado
         ? html`<p><strong>Pagamento informado!</strong> Aguardando o organizador conferir e dar baixa.</p>`
-        : html`<p>Seu pagamento de <strong>${formatBRL(valores().total)}</strong> ainda não foi feito ou confirmado.
+        : sit.parcial
+          ? html`<p>Pague o restante até <strong>${EDICAO.prazoPagamento}</strong> — em ${EDICAO.registroJogos} os jogos são registrados e o bolão é fechado.</p>`
+          : html`<p>Seu pagamento de <strong>${formatBRL(valores().total)}</strong> ainda não foi feito ou confirmado.
             Pague até <strong>${EDICAO.prazoPagamento}</strong> — em ${EDICAO.registroJogos} os jogos são registrados e o bolão é fechado.</p>`}
       <div class="row row--wrap">
         <button class="btn btn--outline btn--sm" data-action="open-payment">Ver chave PIX</button>
-        ${informado ? "" : html`<button class="btn btn--primary btn--sm" data-action="notify-payment">✓ Já paguei via PIX</button>`}
+        ${informado ? "" : html`<button class="btn btn--primary btn--sm" data-action="notify-payment">✓ ${sit.parcial ? "Já paguei o restante" : "Já paguei via PIX"}</button>`}
       </div></div></div>`);
   }
   render($("#dash-avisos"), avisos);
@@ -409,8 +432,17 @@ export async function abrirPagamento() {
   $("[data-action='copy-pix']").disabled = !pix.chave;
 
   const pago = isPago(state.user);
-  const informado = pagamentoInformado(state.user.id);
+  const sit = situacaoPagamento();
+  const informado = pagamentoInformado(state.user.id, sit.pago);
   const { fechado } = statusBolao();
+
+  // Pagamento em partes: mostra quanto falta em vez do valor cheio da cota
+  $("#pay-preco-label").textContent = sit.parcial ? "Falta pagar" : "Valor da cota";
+  $("#pay-preco").textContent = formatBRL(sit.parcial ? sit.falta : sit.total);
+  $("#pay-parcial").hidden = !sit.parcial;
+  $("#pay-parcial").textContent = sit.parcial
+    ? `Você já pagou ${formatBRL(sit.pago)} de ${formatBRL(sit.total)}. Faça o PIX de ${formatBRL(sit.falta)} para completar a cota.`
+    : "";
   const pendente = !pago && !informado && !fechado;
   $("#pay-confirmar").hidden = !pendente;
   $("#pay-depois").hidden = !pendente;
@@ -439,7 +471,7 @@ export async function copiarPix() {
 export async function avisarPagamento(button) {
   const res = await withLoading(button, () => api("confirmPayment", { participantId: state.user.id }));
   if (!res.success) return toast(res.message, "error");
-  marcarPagamentoInformado(state.user.id);
+  marcarPagamentoInformado(state.user.id, situacaoPagamento().pago);
   toast(res.message || "Pagamento informado! O organizador vai conferir.", "success");
   irParaPainel();
 }

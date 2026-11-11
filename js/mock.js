@@ -11,6 +11,7 @@ const KEYS = {
   jogos: "megadavirada_jogos",
   bolao: "megadavirada_bolao",
   config: "megadavirada_config",
+  pagamentos: "megadavirada_pagamentos",
 };
 
 const now = () => new Date().toISOString();
@@ -18,6 +19,12 @@ const uid = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().to
 const formatar = (nums) => [...nums].map(Number).sort((a, b) => a - b).map(pad2).join(", ");
 
 function seed() {
+  if (!local.get(KEYS.pagamentos)) {
+    // Exemplo de pagamento em partes: Mariana já pagou uma parte da cota.
+    local.set(KEYS.pagamentos, [
+      { id: "pg-demo-1", participantId: "p-demo-2", valor: 20, data: now(), tipo: "Parcial", obs: "1ª parte via PIX" },
+    ]);
+  }
   if (!local.get(KEYS.config)) {
     local.set(KEYS.config, {
       pixKey: DEMO.pix.chave, pixTipo: DEMO.pix.tipo, pixNome: DEMO.pix.titular,
@@ -55,6 +62,31 @@ const db = {
 };
 
 const isPago = (p) => String(p?.paymentStatus ?? "").toLowerCase() === "pago";
+const money = (v) => Math.round(Number(String(v ?? "").replace(",", ".")) * 100) / 100 || 0;
+const cota = () => money(db.get("config").valorTotal) || COTA.total;
+const pagamentosDe = (id) => db.get("pagamentos").filter((x) => x.participantId === id)
+  .map(({ id: pid, valor, data, tipo, obs }) => ({ id: pid, valor, data, tipo, obs }));
+const somaDe = (id) => money(pagamentosDe(id).reduce((t, x) => t + x.valor, 0));
+
+/** Mesmo cálculo do code.gs: "Pago" sem lançamentos conta como cota inteira paga. */
+function resumo(p) {
+  const soma = somaDe(p.id);
+  const pago = isPago(p);
+  return { valorPago: pago && soma < cota() ? cota() : soma, valorPendente: pago ? 0 : money(Math.max(0, cota() - soma)) };
+}
+
+/** "Pago" registra o que falta como Quitação; "Pendente" remove as quitações (desfaz a baixa). */
+function aplicarStatus(p, status) {
+  let lista = db.get("pagamentos");
+  if (status === "Pago") {
+    const falta = money(cota() - somaDe(p.id));
+    if (falta > 0) lista = [...lista, { id: uid("pg"), participantId: p.id, valor: falta, data: now(), tipo: "Quitação", obs: "Baixa pelo organizador" }];
+  } else {
+    lista = lista.filter((x) => !(x.participantId === p.id && x.tipo === "Quitação"));
+  }
+  db.set("pagamentos", lista);
+  p.paymentStatus = status;
+}
 const autorizado = (data) => String(data.password ?? "").trim() === DEMO.adminSenha;
 const negado = { success: false, error: "Acesso não autorizado." };
 const fechado = () => db.get("config").StatusBolao === "Fechado";
@@ -137,7 +169,10 @@ const actions = {
     const { notificationEmail, ...config } = db.get("config");
     return {
       success: true,
-      user: { id: p.id, name: p.name, phone: p.phone, paymentStatus: p.paymentStatus || "Pendente" },
+      user: {
+        id: p.id, name: p.name, phone: p.phone, paymentStatus: p.paymentStatus || "Pendente",
+        ...resumo(p), pagamentos: pagamentosDe(p.id).map(({ valor, data }) => ({ valor, data })),
+      },
       myGames: jogosDe(p.id),
       otherGames: db.get("jogos").filter((j) => j.participantId !== p.id).map((j) => ({ dezenas: j.dezenas })),
       bolaoGames: db.get("bolao").map(({ id, qtdDezenas, dezenas, tipo }) => ({ id, qtdDezenas, dezenas, tipo })),
@@ -154,7 +189,7 @@ const actions = {
     const jogos = db.get("jogos");
     const participants = db.get("participantes").map((p) => {
       const games = jogos.filter((j) => j.participantId === p.id).map((j) => ({ jogoNumero: j.gameNumber, dezenas: j.dezenas }));
-      return { ...p, gamesCount: games.length, games };
+      return { ...p, gamesCount: games.length, games, ...resumo(p), pagamentos: pagamentosDe(p.id) };
     });
     return { success: true, participants, bolaoGames: db.get("bolao"), config: db.get("config") };
   },
@@ -165,9 +200,9 @@ const actions = {
     const lista = db.get("participantes");
     const p = lista.find((x) => x.id === data.participantId);
     if (!p) return { success: false, error: "Participante não encontrado." };
-    p.paymentStatus = data.status;
+    aplicarStatus(p, data.status);
     db.set("participantes", lista);
-    return { success: true, message: `Status do participante alterado para '${data.status}'.` };
+    return { success: true, message: `Status do participante alterado para '${data.status}'.`, pagamentos: pagamentosDe(p.id) };
   },
 
   adminDeleteParticipant(data) {
@@ -180,6 +215,7 @@ const actions = {
     const removidos = jogos.length - resto.length;
     db.set("participantes", lista.filter((x) => x.id !== p.id));
     db.set("jogos", resto);
+    db.set("pagamentos", db.get("pagamentos").filter((x) => x.participantId !== p.id));
     return { success: true, message: `Participante ${p.name} excluído${removidos ? ` (com ${removidos} jogo(s)).` : "."}` };
   },
 
@@ -189,9 +225,43 @@ const actions = {
     const ids = new Set(data.participantIds ?? []);
     if (!ids.size) return { success: false, error: "Nenhum participante selecionado." };
     const lista = db.get("participantes");
-    const feitos = lista.filter((p) => ids.has(p.id)).map((p) => { p.paymentStatus = data.status; return p.id; });
+    const feitos = lista.filter((p) => ids.has(p.id)).map((p) => { aplicarStatus(p, data.status); return p.id; });
     db.set("participantes", lista);
-    return { success: true, message: `Status de ${feitos.length} participante(s) alterado para '${data.status}'.`, participantIds: feitos };
+    const pagamentos = Object.fromEntries(feitos.map((id) => [id, pagamentosDe(id)]));
+    return { success: true, message: `Status de ${feitos.length} participante(s) alterado para '${data.status}'.`, participantIds: feitos, pagamentos };
+  },
+
+  adminAddPayment(data) {
+    if (!autorizado(data)) return negado;
+    const valor = money(data.valor);
+    if (!data.participantId) return { success: false, error: "ID do participante não informado." };
+    if (!(valor > 0)) return { success: false, error: "Informe um valor maior que zero." };
+    const lista = db.get("participantes");
+    const p = lista.find((x) => x.id === data.participantId);
+    if (!p) return { success: false, error: "Participante não encontrado." };
+    const r = resumo(p);
+    if (r.valorPendente <= 0) return { success: false, error: "A cota deste participante já está paga." };
+    if (valor > r.valorPendente) return { success: false, error: `O valor é maior que o pendente (R$ ${r.valorPendente.toFixed(2).replace(".", ",")}).` };
+    db.set("pagamentos", [...db.get("pagamentos"), { id: uid("pg"), participantId: p.id, valor, data: now(), tipo: "Parcial", obs: String(data.observacao ?? "").trim().slice(0, 200) }]);
+    const quitou = somaDe(p.id) >= cota();
+    if (quitou) { p.paymentStatus = "Pago"; db.set("participantes", lista); }
+    return {
+      success: true,
+      message: quitou ? "Pagamento lançado. Cota quitada!" : `Pagamento de R$ ${valor.toFixed(2).replace(".", ",")} lançado.`,
+      paymentStatus: p.paymentStatus || "Pendente", ...resumo(p), pagamentos: pagamentosDe(p.id),
+    };
+  },
+
+  adminDeletePayment(data) {
+    if (!autorizado(data)) return negado;
+    const todos = db.get("pagamentos");
+    const alvo = todos.find((x) => x.id === data.paymentId);
+    if (!alvo) return { success: false, error: "Lançamento não encontrado." };
+    db.set("pagamentos", todos.filter((x) => x.id !== alvo.id));
+    const lista = db.get("participantes");
+    const p = lista.find((x) => x.id === alvo.participantId) ?? { id: alvo.participantId, paymentStatus: "Pendente" };
+    if (isPago(p) && somaDe(p.id) < cota()) { p.paymentStatus = "Pendente"; db.set("participantes", lista); }
+    return { success: true, message: "Lançamento removido.", paymentStatus: p.paymentStatus, ...resumo(p), pagamentos: pagamentosDe(p.id) };
   },
 
   adminDeleteParticipants(data) {
@@ -202,6 +272,7 @@ const actions = {
     const feitos = lista.filter((p) => ids.has(p.id)).map((p) => p.id);
     db.set("participantes", lista.filter((p) => !ids.has(p.id)));
     db.set("jogos", db.get("jogos").filter((j) => !ids.has(j.participantId)));
+    db.set("pagamentos", db.get("pagamentos").filter((x) => !ids.has(x.participantId)));
     return { success: true, message: `${feitos.length} participante(s) excluído(s).`, participantIds: feitos };
   },
 

@@ -19,7 +19,8 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 
 ### Organizador (`admin.html`)
 - Acesso por senha, guardada na propriedade do script `AdminPass` (fora da planilha).
-- Métricas: participantes, pagos, pendentes, valor arrecadado, fundo e total de jogos a registrar.
+- Métricas: participantes, pagos, pendentes, valor arrecadado (inclui pagamentos parciais), fundo e total de jogos a registrar.
+- **Pagamento em partes** (botão “💵 Valores”): lance cada valor recebido, com observação; o histórico fica na aba `Pagamentos` da planilha. Quando a soma chega ao valor da cota, o participante vira “Pago” automaticamente. “Dar baixa” registra o que falta como *Quitação* e “Voltar p/ pendente” remove só essa quitação. O participante vê no painel quanto já pagou e quanto falta.
 - Participantes: busca por nome/telefone, filtro por status, **dar baixa** / desfazer, ver os jogos de cada um e **excluir** o participante (remove também os jogos dele).
 - **Jogos oficiais** de 6, 7, 8 ou 9 dezenas, com surpresinha.
 - **Exportação TXT/PDF** de todos os jogos (oficiais + participantes **pagos**; opcionalmente os pendentes). O TXT tem um jogo por linha (`02,07,15,23,28,50`).
