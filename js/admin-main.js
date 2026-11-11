@@ -4,12 +4,14 @@ import { state } from "./state.js";
 import { $, showView, toast, openDialog, closeDialog, enableBackdropClose } from "./ui.js";
 import { setupPwa } from "./pwa.js";
 import * as admin from "./admin.js";
+import { setupTema, alternarTema } from "./tema.js";
 
 // ---------- Ações de clique (data-action) ----------
 
 const actions = {
   "open-dialog": (el) => openDialog(el.dataset.dialog),
   "close-dialog": (el) => closeDialog(el),
+  "toggle-theme": () => alternarTema(),
   logout: () => {
     admin.sair();
     toast("Sessão administrativa encerrada.", "info");
@@ -83,6 +85,7 @@ async function boot() {
   enableBackdropClose();
   bindEvents();
   setupPwa();
+  setupTema();
   admin.setupSeletorJogo();
   admin.trocarAba("participantes");
 

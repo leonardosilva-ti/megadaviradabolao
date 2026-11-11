@@ -17,6 +17,7 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 - **Painel**: status do pagamento e do bolão, seus 5 jogos (com **comprovante em PDF** e botão **Editar**, liberado até o fechamento do bolão — `EDICAO.prazoAlteracao` no `js/config.js` e `PRAZO_ALTERACAO_JOGOS` no `code.gs`, ou antes se o organizador fechar o bolão), jogos especiais do bolão (7–9 dezenas em destaque dourado) e todos os jogos do grupo sem nomes/telefones (com aviso de que podem mudar até o fechamento).
 - **Depois do fechamento do bolão**: conferência do resultado (os próprios jogos, os jogos especiais e os dos demais participantes pagos, com 4+ acertos) e **PDF com todos os jogos** registrados.
 - Instalável como app (PWA).
+- **Modo claro/escuro** pelo botão 🌙/☀️ no cabeçalho (site e painel do organizador). Sem escolha, segue o tema do aparelho.
 
 ### Organizador (`admin.html`)
 - Acesso por senha, guardada na propriedade do script `AdminPass` (fora da planilha).

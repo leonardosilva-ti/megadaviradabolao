@@ -52,8 +52,9 @@
   --ease: cubic-bezier(.2, .8, .2, 1);
 }
 
+/* Tema escuro: segue o aparelho, a menos que a pessoa tenha escolhido o claro no botão 🌙/☀️ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --bg: #0e1310;
     --surface: #151c17;
@@ -86,6 +87,40 @@
     --shadow: 0 1px 3px rgb(0 0 0 / .4), 0 4px 16px rgb(0 0 0 / .25);
     --shadow-lg: 0 20px 50px rgb(0 0 0 / .5);
   }
+}
+/* Escolha manual do modo escuro (data-theme="dark" no <html>) */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1310;
+  --surface: #151c17;
+  --surface-2: #1a221c;
+  --surface-3: #212b23;
+  --border: #2a352c;
+  --border-strong: #3a473c;
+  --text: #e8eee8;
+  --text-2: #b4bfb3;
+  --text-3: #8a9688;
+  --brand: #22c55e;
+  --brand-600: #16a34a;
+  --brand-700: #4ade80;
+  --brand-50: #10291a;
+  --brand-100: #14361f;
+  --on-brand: #04170a;
+  --info: #7aa2ff;
+  --info-bg: #141d33;
+  --info-border: #263a66;
+  --warn: #fcd34d;
+  --warn-bg: #2a2110;
+  --warn-border: #4d3b12;
+  --danger: #fca5a5;
+  --danger-bg: #2c1414;
+  --danger-border: #5a2222;
+  --purple: #c4b5fd;
+  --purple-bg: #1f1833;
+  --gold: #fde047;
+  --gold-bg: #29250d;
+  --shadow: 0 1px 3px rgb(0 0 0 / .4), 0 4px 16px rgb(0 0 0 / .25);
+  --shadow-lg: 0 20px 50px rgb(0 0 0 / .5);
 }
 
 /* ---------- Base ---------- */
@@ -437,6 +472,9 @@ details.disclosure > .disclosure__body { margin-top: 10px; }
   font: inherit; font-size: 11.5px; font-weight: 650; white-space: nowrap; cursor: pointer;
 }
 .aviso-pag:hover { border-style: solid; }
+
+/* Botão de modo claro/escuro */
+.btn--theme { width: 34px; padding: 0; font-size: 16px; }
 
 /* Botão redondo "i" de informação */
 .btn-info {

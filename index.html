@@ -13,6 +13,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <script>
+    // Aplica o tema salvo antes de desenhar a página (evita piscar o tema errado)
+    try { var t = JSON.parse(localStorage.getItem("megadavirada_tema")); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
   <link rel="stylesheet" href="css/styles.css">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script type="module" src="js/main.js"></script>
@@ -30,6 +34,7 @@
         </span>
       </a>
       <nav class="header-actions">
+        <button class="btn btn--ghost btn--sm btn--theme" data-action="toggle-theme" aria-pressed="false" aria-label="Ativar modo escuro" title="Modo escuro"><span data-theme-icon aria-hidden="true">🌙</span></button>
         <button class="btn btn--ghost btn--sm" data-action="open-dialog" data-dialog="dialog-regras">📜 <span class="btn__text">Regras</span></button>
         <button class="btn btn--outline btn--sm" data-action="install">⬇️ <span class="btn__text">Instalar app</span></button>
         <button class="btn btn--outline btn--sm" data-action="logout" data-show="user" hidden>Sair</button>

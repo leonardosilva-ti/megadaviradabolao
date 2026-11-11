@@ -5,6 +5,7 @@ import { $, showView, toast, openDialog, closeDialog, enableBackdropClose, setup
 import { formatPhone, formatDateMask } from "./utils.js";
 import { setupPwa, instalarApp } from "./pwa.js";
 import * as p from "./participante.js";
+import { setupTema, alternarTema } from "./tema.js";
 
 // ---------- Ações de clique (data-action) ----------
 
@@ -15,6 +16,7 @@ const actions = {
   "open-dialog": (el) => openDialog(el.dataset.dialog),
   "close-dialog": (el) => closeDialog(el),
   install: () => instalarApp(),
+  "toggle-theme": () => alternarTema(),
   logout: () => sair(),
 
   "refresh-dashboard": (el) => p.refreshDashboard(el),
@@ -82,6 +84,7 @@ async function boot() {
   enableBackdropClose();
   bindEvents();
   setupPwa();
+  setupTema();
   p.setupWizard();
   p.renderValores();
 
