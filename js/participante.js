@@ -1,6 +1,7 @@
 import { api } from "./api.js";
 import { COTA, EDICAO, JOGOS_POR_PARTICIPANTE as TOTAL_JOGOS, DEZENAS_POR_JOGO as DEZENAS } from "./config.js";
 import { state, setUser, resetWizard, pagamentoInformado, marcarPagamentoInformado } from "./state.js";
+import { local } from "./utils.js";
 import { $, $$, showView, toast, withLoading, openDialog, balls, gameCard, empty, buildPicker, updatePicker } from "./ui.js";
 import * as convite from "./convite.js";
 import {
@@ -92,10 +93,24 @@ export function renderWhatsapp() {
   $$("[data-whatsapp-box]").forEach((el) => { el.hidden = !numero; });
 }
 
-/** Configuração pública (antes do login): por enquanto só o WhatsApp do organizador. */
+const CONFIG_PUBLICA_KEY = "megadavirada_config_publica";
+
+/**
+ * Configuração pública (antes do login): por enquanto só o WhatsApp do organizador.
+ * Mostra na hora o número guardado da última visita e atualiza com o servidor em
+ * segundo plano (o Apps Script leva 1–2 s para responder).
+ */
 export async function carregarConfigPublica() {
+  const salvo = local.get(CONFIG_PUBLICA_KEY);
+  if (salvo && typeof salvo === "object") {
+    state.publicConfig = salvo;
+    renderWhatsapp();
+  }
   const res = await api("getConfig");
-  if (res.success) state.publicConfig = res;
+  if (res.success) {
+    state.publicConfig = { whatsapp: res.whatsapp ?? "" };
+    local.set(CONFIG_PUBLICA_KEY, state.publicConfig);
+  }
   renderWhatsapp();
 }
 
