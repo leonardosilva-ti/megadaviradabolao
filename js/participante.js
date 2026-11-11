@@ -100,12 +100,13 @@ const CONFIG_PUBLICA_KEY = "megadavirada_config_publica";
  * Mostra na hora o número guardado da última visita e atualiza com o servidor em
  * segundo plano (o Apps Script leva 1–2 s para responder).
  */
-export async function carregarConfigPublica() {
+export async function carregarConfigPublica({ buscar = true } = {}) {
   const salvo = local.get(CONFIG_PUBLICA_KEY);
   if (salvo && typeof salvo === "object") {
     state.publicConfig = salvo;
     renderWhatsapp();
   }
+  if (!buscar) return;
   const res = await api("getConfig");
   if (res.success) {
     state.publicConfig = { whatsapp: res.whatsapp ?? "" };
@@ -141,7 +142,7 @@ export async function login(form) {
   if (!res.success) return toast(res.message, "error");
 
   form.reset();
-  await entrar({ ...res.user, token: res.token }, `Bem-vindo(a) de volta, ${firstName(res.user.name)}!`);
+  await entrar({ ...res.user, token: res.token }, `Bem-vindo(a) de volta, ${firstName(res.user.name)}!`, res.dashboard);
 }
 
 export async function register(form) {
@@ -158,22 +159,28 @@ export async function register(form) {
   if (!res.success) return toast(res.message, "error");
 
   form.reset();
-  await entrar({ ...res.user, token: res.token }, `Cadastro realizado, ${firstName(res.user.name)}!`);
+  await entrar({ ...res.user, token: res.token }, `Cadastro realizado, ${firstName(res.user.name)}!`, res.dashboard);
 }
 
-async function entrar(user, mensagem) {
+async function entrar(user, mensagem, painel) {
   setUser(user);
   state.dashboard = null;
   state.config = null;
   toast(mensagem, "success");
-  await abrirPainelOuWizard();
+  await abrirPainelOuWizard(painel);
 }
 
 /** Após login (ou ao reabrir o site): vai para o wizard se ainda faltam os jogos, senão para o painel. */
-export async function abrirPainelOuWizard() {
-  renderDashboard();
+export async function abrirPainelOuWizard(painel) {
+  let ok = false;
+  if (painel?.success) {
+    aplicarDashboard(painel); // veio junto com o login/cadastro: não precisa buscar de novo
+    ok = true;
+  } else {
+    renderDashboard();
+  }
   showView("view-dashboard");
-  const ok = await refreshDashboard();
+  if (!ok) ok = await refreshDashboard();
   if (!state.user) return; // sessão expirou durante o carregamento: já voltou para o login
   const qtdJogos = ok ? state.dashboard.myGames.length : (state.user.hasGames ? TOTAL_JOGOS : 0);
   if (qtdJogos < TOTAL_JOGOS && podeAlterarJogos()) startWizard();
@@ -189,6 +196,16 @@ export async function refreshDashboard(button) {
     if (!res.sessaoExpirada) toast(res.message || "Não foi possível carregar seus dados.", "error");
     return false;
   }
+  aplicarDashboard(res);
+  if (button) toast("Dados atualizados!", "success");
+  return true;
+}
+
+/**
+ * Aplica os dados do painel (vindos do getDashboardData ou já incluídos na resposta
+ * do login, cadastro ou salvar jogos — assim o site não faz uma requisição a mais).
+ */
+function aplicarDashboard(res) {
   state.dashboard = {
     ...res,
     myGames: res.myGames ?? [],
@@ -197,9 +214,12 @@ export async function refreshDashboard(button) {
   };
   state.config = res.config ?? {};
   setUser({ ...state.user, ...res.user, hasGames: state.dashboard.myGames.length >= TOTAL_JOGOS });
+  // O painel já traz o WhatsApp do organizador: atualiza o guardado para a tela de acesso
+  if (state.config.whatsapp !== undefined) {
+    state.publicConfig = { whatsapp: state.config.whatsapp ?? "" };
+    local.set(CONFIG_PUBLICA_KEY, state.publicConfig);
+  }
   renderDashboard();
-  if (button) toast("Dados atualizados!", "success");
-  return true;
 }
 
 /**
@@ -305,10 +325,21 @@ export function renderDashboard() {
     })
     : empty("Nenhum jogo especial ainda. Assim que as cotas forem confirmadas, o organizador registra os jogos aqui."));
 
-  // Jogos do grupo (anônimos)
+  // Jogos do grupo (anônimos): podem ser centenas de cartões, então só desenha com a lista aberta
   $("#dash-outros-qtd").textContent = d.otherGames.length;
-  render($("#dash-outros"), d.otherGames.length
-    ? d.otherGames.map((g, i) => gameCard(parseDezenas(g.dezenas), `#${i + 1}`, { size: "xs", variant: "muted" }))
+  outrosDesenhados = null;
+  if ($("#dash-outros-lista").open) renderJogosDoGrupo();
+}
+
+let outrosDesenhados = null; // lista já desenhada (evita redesenhar à toa)
+
+/** Desenha os jogos do grupo; chamado ao abrir a lista "Ver todos os jogos". */
+export function renderJogosDoGrupo() {
+  const outros = state.dashboard?.otherGames ?? [];
+  if (outrosDesenhados === outros) return;
+  outrosDesenhados = outros;
+  render($("#dash-outros"), outros.length
+    ? outros.map((g, i) => gameCard(parseDezenas(g.dezenas), `#${i + 1}`, { size: "xs", variant: "muted" }))
     : html`<p class="small muted">Ainda não há jogos de outros participantes.</p>`);
 }
 
@@ -372,21 +403,21 @@ export function conferirResultado(form) {
       </div></div>`);
 }
 
-export function baixarTodosOsJogos() {
+export async function baixarTodosOsJogos(button) {
   if (!statusBolao().fechado) return toast("O comprovante com todos os jogos fica disponível depois do fechamento do bolão.", "info");
   const { meusValem, meus, oficiais, outros } = jogosDoBolao();
   try {
-    gerarComprovanteCompleto({ user: state.user, meus, meusValem, oficiais, outros });
+    await withLoading(button, () => gerarComprovanteCompleto({ user: state.user, meus, meusValem, oficiais, outros }));
   } catch (e) {
     toast(e.message, "error");
   }
 }
 
-export function baixarComprovante() {
+export async function baixarComprovante(button) {
   const jogos = state.dashboard?.myGames ?? [];
   if (!jogos.length) return toast("Você ainda não cadastrou seus palpites.", "error");
   try {
-    gerarComprovante(state.user, jogos);
+    await withLoading(button, () => gerarComprovante(state.user, jogos));
   } catch (e) {
     toast(e.message, "error");
   }
@@ -554,15 +585,16 @@ export async function enviarJogos(button) {
   if (!res.success) return toast(res.message, "error");
 
   resetWizard();
+  // O servidor já devolve o painel atualizado; só busca de novo se for um Apps Script antigo
+  if (res.dashboard?.success) aplicarDashboard(res.dashboard);
+  else await refreshDashboard();
   if (editando) {
     toast("Seus jogos foram alterados!", "success");
-    await refreshDashboard();
     return irParaPainel();
   }
 
   toast(res.message || "Seus jogos foram salvos!", "success");
   fimDoCadastro = true; // ao sair do pagamento, oferece o convite para amigos
-  await refreshDashboard();
   await abrirPagamento();
 }
 

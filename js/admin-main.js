@@ -49,6 +49,8 @@ const forms = {
   "form-conferencia": admin.conferir,
 };
 
+let buscaTimer = null;
+
 function bindEvents() {
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-action]");
@@ -69,7 +71,11 @@ function bindEvents() {
   });
 
   document.addEventListener("input", (e) => {
-    if (e.target.id === "adm-busca") admin.renderTabela();
+    if (e.target.id === "adm-busca") {
+      // espera a pessoa parar de digitar antes de redesenhar a tabela
+      clearTimeout(buscaTimer);
+      buscaTimer = setTimeout(() => admin.renderTabela(), 150);
+    }
     else if (e.target.id === "cfg-valor") admin.atualizarDivisaoCota();
   });
   document.addEventListener("change", (e) => {

@@ -560,16 +560,17 @@ export async function excluirJogoOficial(button) {
  * Junta os jogos dos participantes (do backend) com os jogos oficiais do bolão.
  * Por padrão só entram participantes com pagamento confirmado.
  */
-async function coletarJogos(button) {
-  const res = await withLoading(button, () => api("adminExportAllJSON", { token: sessao() }));
-  if (!res.success) {
-    toast(res.message, "error");
-    return null;
-  }
+function coletarJogos() {
+  // Usa os dados já carregados no painel (antes era uma requisição a mais ao Apps Script)
   const incluirPendentes = $("#exp-pendentes").checked;
-  const participantes = (res.games ?? [])
-    .filter((g) => incluirPendentes || isPago(g))
-    .map((g) => ({ ...g, oficial: false }));
+  const participantes = dados().participants
+    .filter((p) => incluirPendentes || isPago(p))
+    .flatMap((p) => [...(p.games ?? [])]
+      .sort((a, b) => (a.jogoNumero ?? a.gameNumber) - (b.jogoNumero ?? b.gameNumber))
+      .map((g, i) => ({
+        participantName: p.name, paymentStatus: p.paymentStatus,
+        gameNumber: g.jogoNumero ?? g.gameNumber ?? i + 1, dezenas: g.dezenas, oficial: false,
+      })));
   const oficiais = dados().bolaoGames.map((g) => ({
     participantName: `Bolão · ${parseDezenas(g.dezenas).length} dezenas`, dezenas: g.dezenas, oficial: true,
   }));
@@ -581,18 +582,18 @@ async function coletarJogos(button) {
   return jogos;
 }
 
-export async function exportarTxt(button) {
-  const jogos = await coletarJogos(button);
+export async function exportarTxt() {
+  const jogos = coletarJogos();
   if (!jogos) return;
   downloadFile("jogos_loteria.txt", jogos.map((g) => parseDezenas(g.dezenas).join(",")).join("\n"));
   toast(`${jogos.length} jogo(s) exportado(s) para TXT.`, "success");
 }
 
 export async function exportarPdf(button) {
-  const jogos = await coletarJogos(button);
+  const jogos = coletarJogos();
   if (!jogos) return;
   try {
-    gerarListaCompleta(jogos);
+    await withLoading(button, () => gerarListaCompleta(jogos));
     toast(`PDF gerado com ${jogos.length} jogo(s).`, "success");
   } catch (e) {
     toast(e.message, "error");

@@ -117,7 +117,7 @@ const actions = {
       return { success: false, error: "Data de nascimento incorreta para o telefone informado. Verifique se digitou o dia, mês e ano corretamente." };
     }
     const games = jogosDe(p.id);
-    return { success: true, token: passe("part", p.id, 30 * 864e5), user: { id: p.id, name: p.name, phone: p.phone, birthdate, paymentStatus: p.paymentStatus, hasGames: games.length >= 5, games } };
+    return { success: true, token: passe("part", p.id, 30 * 864e5), dashboard: actions.getDashboardData({ participantId: p.id }), user: { id: p.id, name: p.name, phone: p.phone, birthdate, paymentStatus: p.paymentStatus, hasGames: games.length >= 5, games } };
   },
 
   register({ name, phone, birthdate }) {
@@ -135,7 +135,7 @@ const actions = {
     }
     const user = { id: uid("p"), name, phone, birthdate, paymentStatus: "Pendente", createdAt: now() };
     db.set("participantes", [...lista, user]);
-    return { success: true, token: passe("part", user.id, 30 * 864e5), user: { id: user.id, name, phone, birthdate, paymentStatus: "Pendente" } };
+    return { success: true, token: passe("part", user.id, 30 * 864e5), dashboard: actions.getDashboardData({ participantId: user.id }), user: { id: user.id, name, phone, birthdate, paymentStatus: "Pendente" } };
   },
 
   saveGames({ participantId, games }) {
@@ -157,7 +157,7 @@ const actions = {
     }
     const outros = db.get("jogos").filter((j) => j.participantId !== participantId);
     db.set("jogos", [...outros, ...formatados.map((dezenas, i) => ({ id: uid("j"), participantId, gameNumber: i + 1, dezenas }))]);
-    return { success: true, message: "Seus 5 jogos foram salvos com sucesso!", games: formatados };
+    return { success: true, message: "Seus 5 jogos foram salvos com sucesso!", games: formatados, dashboard: actions.getDashboardData({ participantId }) };
   },
 
   confirmPayment({ participantId, valor: valorInformado }) {

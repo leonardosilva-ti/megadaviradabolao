@@ -29,8 +29,8 @@ const actions = {
   "copy-pix": () => p.copiarPix(),
   "notify-payment": (el) => p.avisarPagamento(el),
   "notify-partial": () => p.abrirPagamentoParcial(),
-  "download-receipt": () => p.baixarComprovante(),
-  "download-all-games": () => p.baixarTodosOsJogos(),
+  "download-receipt": (el) => p.baixarComprovante(el),
+  "download-all-games": (el) => p.baixarTodosOsJogos(el),
 
   "start-wizard": () => p.startWizard(),
   "edit-games": () => p.editarJogos(),
@@ -62,6 +62,9 @@ function bindEvents() {
     }
   });
 
+  // "Ver todos os jogos" do grupo: desenha a lista só quando abrir
+  $("#dash-outros-lista").addEventListener("toggle", (e) => { if (e.target.open) p.renderJogosDoGrupo(); });
+
   document.addEventListener("submit", (e) => {
     const handler = forms[e.target.id];
     if (handler) {
@@ -89,7 +92,9 @@ async function boot() {
   p.renderValores();
 
   $("#data-sorteio").textContent = EDICAO.dataSorteio;
-  p.carregarConfigPublica(); // WhatsApp do organizador para o botão "Tirar dúvidas" (sem esperar)
+  // WhatsApp do organizador para o botão "Tirar dúvidas": quem já está logado recebe junto
+  // com o painel, então só busca a configuração pública na tela de acesso.
+  p.carregarConfigPublica({ buscar: !state.user?.token });
   $("#demo-banner").hidden = !isDemo;
   showView("view-login");
 

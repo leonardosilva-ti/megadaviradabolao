@@ -10,10 +10,34 @@ const VERDE_CLARO = [236, 253, 243];
 const OURO = [161, 98, 7];
 const CINZA = [90, 100, 90];
 
-function novoDocumento() {
-  const jsPDF = window.jspdf?.jsPDF;
-  if (!jsPDF) throw new Error("A biblioteca de PDF ainda não carregou. Verifique a conexão e tente novamente.");
-  return new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+// A biblioteca (≈360 KB) só é baixada quando alguém gera um PDF, não em toda abertura do site.
+const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+const JSPDF_SRI = "sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==";
+let carregando = null;
+
+/** Carrega o jsPDF uma vez (com verificação de integridade) e devolve a classe jsPDF. */
+export function carregarJsPDF() {
+  if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  carregando ??= new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = JSPDF_URL;
+    script.integrity = JSPDF_SRI;
+    script.crossOrigin = "anonymous";
+    script.referrerPolicy = "no-referrer";
+    script.onload = () => (window.jspdf?.jsPDF ? resolve(window.jspdf.jsPDF) : reject(new Error("Biblioteca de PDF inválida.")));
+    script.onerror = () => {
+      carregando = null; // permite tentar de novo
+      script.remove();
+      reject(new Error("Não foi possível carregar a biblioteca de PDF. Verifique a conexão e tente novamente."));
+    };
+    document.head.appendChild(script);
+  });
+  return carregando;
+}
+
+async function novoDocumento() {
+  const JsPDF = await carregarJsPDF();
+  return new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 }
 
 const nomeArquivo = (texto) =>
@@ -34,8 +58,8 @@ function cabecalho(doc, titulo, subtitulo) {
 }
 
 /** Comprovante com os 5 jogos do participante. */
-export function gerarComprovante(user, games) {
-  const doc = novoDocumento();
+export async function gerarComprovante(user, games) {
+  const doc = await novoDocumento();
   const w = doc.internal.pageSize.getWidth();
   const m = 15;
 
@@ -96,8 +120,8 @@ export function gerarComprovante(user, games) {
  * Comprovante com todos os jogos do bolão (liberado ao participante depois do fechamento):
  * os jogos dele, os jogos especiais do organizador e os jogos dos demais participantes (sem nomes).
  */
-export function gerarComprovanteCompleto({ user, meus, meusValem, oficiais, outros }) {
-  const doc = novoDocumento();
+export async function gerarComprovanteCompleto({ user, meus, meusValem, oficiais, outros }) {
+  const doc = await novoDocumento();
   const w = doc.internal.pageSize.getWidth();
   const h = doc.internal.pageSize.getHeight();
   const m = 14;
@@ -209,8 +233,8 @@ export function gerarComprovanteCompleto({ user, meus, meusValem, oficiais, outr
  * Lista com todos os jogos (admin).
  * @param {{ participantName: string, dezenas: string, oficial?: boolean, paymentStatus?: string }[]} jogos
  */
-export function gerarListaCompleta(jogos) {
-  const doc = novoDocumento();
+export async function gerarListaCompleta(jogos) {
+  const doc = await novoDocumento();
   const w = doc.internal.pageSize.getWidth();
   const h = doc.internal.pageSize.getHeight();
   const m = 12;
