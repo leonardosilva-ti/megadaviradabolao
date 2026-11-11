@@ -653,6 +653,7 @@ function renderConfig() {
   form.elements.pixTipo.value = c.pixTipo || "E-mail";
   form.elements.pixNome.value = c.pixNome || "";
   form.elements.pixBanco.value = c.pixBanco || "";
+  form.elements.whatsapp.value = formatPhone(c.whatsapp || "");
   form.elements.notificationEmail.value = c.notificationEmail || "";
   form.elements.valorTotal.value = formatBRL(valores().total).replace(/^R\$\s*/, "");
   atualizarDivisaoCota();
@@ -673,11 +674,13 @@ export async function salvarPix(form) {
     pixTipo: form.elements.pixTipo.value,
     pixNome: form.elements.pixNome.value.trim(),
     pixBanco: form.elements.pixBanco.value.trim(),
+    whatsapp: onlyDigits(form.elements.whatsapp.value),
     notificationEmail: form.elements.notificationEmail.value.trim(),
     valorTotal: lerValor(form.elements.valorTotal.value),
   };
   const minimo = JOGOS_POR_PARTICIPANTE * COTA.precoAposta;
   if (!payload.pixKey) return toast("Informe a chave PIX.", "error");
+  if (payload.whatsapp && (payload.whatsapp.length < 10 || payload.whatsapp.length > 13)) return toast("WhatsApp inválido. Informe o número com DDD.", "error");
   if (!(payload.valorTotal >= minimo)) return toast(`O valor da cota deve ser de pelo menos ${formatBRL(minimo)}.`, "error");
   if (payload.notificationEmail && !form.elements.notificationEmail.checkValidity()) return toast("E-mail de notificação inválido.", "error");
 

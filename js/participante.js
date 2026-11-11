@@ -66,11 +66,38 @@ const prazoEncerrado = () => Date.now() >= new Date(EDICAO.prazoAlteracao).getTi
 /** Os jogos podem ser escolhidos/alterados enquanto o bolão estiver aberto e dentro do prazo. */
 const podeAlterarJogos = () => !statusBolao().fechado && !prazoEncerrado();
 
+/** Número do organizador (só dígitos, com 55 do Brasil) ou "" se não configurado. */
+function whatsappOrganizador() {
+  const d = onlyDigits(state.config?.whatsapp || state.publicConfig?.whatsapp || "");
+  if (d.length < 10) return "";
+  return d.length <= 11 ? `55${d}` : d;
+}
+
+/** Atualiza os botões "Tirar dúvidas" ([data-whatsapp]): link com mensagem pronta, ou escondidos. */
+export function renderWhatsapp() {
+  const numero = whatsappOrganizador();
+  const nome = state.user?.name ? ` Sou ${firstName(state.user.name)}.` : "";
+  const texto = `Olá!${nome} Tenho uma dúvida sobre o Bolão da Mega da Virada.`;
+  $$("[data-whatsapp]").forEach((a) => {
+    a.hidden = !numero;
+    if (numero) a.href = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+  });
+  $$("[data-whatsapp-box]").forEach((el) => { el.hidden = !numero; });
+}
+
+/** Configuração pública (antes do login): por enquanto só o WhatsApp do organizador. */
+export async function carregarConfigPublica() {
+  const res = await api("getConfig");
+  if (res.success) state.publicConfig = res;
+  renderWhatsapp();
+}
+
 /** Preenche os valores da cota em todos os elementos [data-valor]. */
 export function renderValores() {
   const v = valores();
   $$("[data-valor]").forEach((el) => { el.textContent = formatBRL(v[el.dataset.valor]); });
   $$("[data-edicao]").forEach((el) => { el.textContent = EDICAO[el.dataset.edicao]; });
+  renderWhatsapp();
   convite.renderConvite(v.total);
 }
 

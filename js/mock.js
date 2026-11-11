@@ -331,18 +331,26 @@ const actions = {
     return { success: true, message: "Jogo excluído com sucesso." };
   },
 
+  getConfig() {
+    const c = db.get("config");
+    return { success: true, pixKey: c.pixKey, pixTipo: c.pixTipo, pixNome: c.pixNome, pixBanco: c.pixBanco ?? "", valorTotal: c.valorTotal, whatsapp: c.whatsapp ?? "" };
+  },
+
   adminSavePixConfig(data) {
     if (!autorizado(data)) return negado;
     const pixKey = String(data.pixKey ?? "").trim();
     if (!pixKey) return { success: false, error: "A chave PIX não pode ficar vazia." };
     const cfg = db.get("config");
     const temValor = data.valorTotal !== undefined && data.valorTotal !== null && String(data.valorTotal).trim() !== "";
+    const w = onlyDigits(data.whatsapp ?? "");
+    if (w && (w.length < 10 || w.length > 13)) return { success: false, error: "WhatsApp inválido. Informe o número com DDD, ex.: (11) 98765-4321." };
     if (temValor && !(money(data.valorTotal) >= 30)) return { success: false, error: "O valor da cota deve ser de pelo menos R$ 30,00 (5 jogos de R$ 6,00)." };
     Object.assign(cfg, {
       pixKey,
       pixTipo: String(data.pixTipo ?? "").trim() || cfg.pixTipo,
       pixNome: String(data.pixNome ?? "").trim() || cfg.pixNome,
       pixBanco: String(data.pixBanco ?? "").trim().slice(0, 80),
+      ...(data.whatsapp !== undefined ? { whatsapp: onlyDigits(data.whatsapp) } : {}),
       notificationEmail: String(data.notificationEmail ?? "").trim(),
       ...(temValor ? { valorTotal: money(data.valorTotal).toFixed(2) } : {}),
     });

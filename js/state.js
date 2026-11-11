@@ -14,6 +14,7 @@ export const state = {
   adminPassword: session.get(ADMIN_KEY),
   dashboard: null,
   config: null,
+  publicConfig: null, // configuração pública (antes do login), ex.: WhatsApp do organizador
   wizard: novoWizard(),
   admin: { data: null, tamanho: 7, selecionadas: [] },
 };

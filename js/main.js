@@ -89,6 +89,7 @@ async function boot() {
   p.renderValores();
 
   $("#data-sorteio").textContent = EDICAO.dataSorteio;
+  p.carregarConfigPublica(); // WhatsApp do organizador para o botão "Tirar dúvidas" (sem esperar)
   $("#demo-banner").hidden = !isDemo;
   showView("view-login");
 
