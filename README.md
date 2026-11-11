@@ -12,9 +12,10 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 ### Participante (`index.html`)
 - **Login** com WhatsApp + data de nascimento; **cadastro** com aceite das regras.
 - **Escolha dos 5 jogos** no volante de 60 dezenas: exatamente 6 por jogo, bloqueio de jogos idênticos, **surpresinha** que completa só as dezenas que faltam, navegação livre entre os jogos e tela de revisão.
-- **Pagamento via PIX** logo após o cadastro, com opção **“Pagar depois”**: valor da cota e divisão transparente (R$ 30 dos 5 jogos + R$ 15 para o fundo de jogos especiais), chave com botão de copiar (vem da aba `Config`), prazo de pagamento (28/12 às 12h; jogos registrados e bolão fechado às 18h) e botão “Já paguei” que avisa o organizador por e-mail.
+- **Pagamento via PIX** logo após o cadastro, com opção **“Pagar depois”**: valor da cota e divisão transparente (R$ 60 = R$ 30 dos 5 jogos + R$ 30 para o fundo de jogos especiais), chave com botão de copiar, titular e instituição (vêm da aba `Config`), prazo de pagamento (28/12 às 12h; jogos registrados e bolão fechado às 18h) e botão “Já paguei” que avisa o organizador por e-mail.
 - **Convite para amigos** ao final do cadastro e no painel: mensagem pronta (com o prêmio estimado e o link do site) para WhatsApp, qualquer outro app ou copiar.
 - **Painel**: status do pagamento e do bolão, seus 5 jogos (com **comprovante em PDF** e botão **Editar**, liberado até o fechamento do bolão — `EDICAO.prazoAlteracao` no `js/config.js` e `PRAZO_ALTERACAO_JOGOS` no `code.gs`, ou antes se o organizador fechar o bolão), jogos especiais do bolão (7–9 dezenas em destaque dourado) e todos os jogos do grupo sem nomes/telefones (com aviso de que podem mudar até o fechamento).
+- **Depois do fechamento do bolão**: conferência do resultado (os próprios jogos, os jogos especiais e os dos demais participantes pagos, com 4+ acertos) e **PDF com todos os jogos** registrados.
 - Instalável como app (PWA).
 
 ### Organizador (`admin.html`)
@@ -26,7 +27,7 @@ Site para organizar o bolão da Mega da Virada entre familiares e amigos.
 - **Exportação TXT/PDF** de todos os jogos (oficiais + participantes **pagos**; opcionalmente os pendentes). O TXT tem um jogo por linha (`02,07,15,23,28,50`).
 - Fechar/reabrir o bolão e confirmar o registro na loteria (avisa todos no painel).
 - **Conferência do resultado**: digite as 6 dezenas sorteadas e veja os jogos (oficiais + participantes pagos) com 4 ou mais acertos. Nos jogos de 7 a 9 dezenas mostra quantas senas, quinas e quadras o jogo vale.
-- Configuração da chave PIX e do e-mail de notificações.
+- Configuração da chave PIX (tipo, titular e instituição), do **valor da cota** e do e-mail de notificações.
 
 ---
 

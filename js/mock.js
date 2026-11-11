@@ -27,7 +27,7 @@ function seed() {
   }
   if (!local.get(KEYS.config)) {
     local.set(KEYS.config, {
-      pixKey: DEMO.pix.chave, pixTipo: DEMO.pix.tipo, pixNome: DEMO.pix.titular,
+      pixKey: DEMO.pix.chave, pixTipo: DEMO.pix.tipo, pixNome: DEMO.pix.titular, pixBanco: DEMO.pix.banco,
       notificationEmail: "", valorTotal: COTA.total.toFixed(2), StatusBolao: "Aberto", RegistroLoteria: "false",
     });
   }
@@ -174,7 +174,13 @@ const actions = {
         ...resumo(p), pagamentos: pagamentosDe(p.id).map(({ valor, data }) => ({ valor, data })),
       },
       myGames: jogosDe(p.id),
-      otherGames: db.get("jogos").filter((j) => j.participantId !== p.id).map((j) => ({ dezenas: j.dezenas })),
+      // Depois do fechamento, só os jogos de quem pagou (os que são registrados)
+      otherGames: (() => {
+        const pagos = new Set(db.get("participantes").filter(isPago).map((x) => x.id));
+        return db.get("jogos")
+          .filter((j) => j.participantId !== p.id && (!fechado() || pagos.has(j.participantId)))
+          .map((j) => ({ dezenas: j.dezenas }));
+      })(),
       bolaoGames: db.get("bolao").map(({ id, qtdDezenas, dezenas, tipo }) => ({ id, qtdDezenas, dezenas, tipo })),
       config,
     };
@@ -301,14 +307,18 @@ const actions = {
     const pixKey = String(data.pixKey ?? "").trim();
     if (!pixKey) return { success: false, error: "A chave PIX não pode ficar vazia." };
     const cfg = db.get("config");
+    const temValor = data.valorTotal !== undefined && data.valorTotal !== null && String(data.valorTotal).trim() !== "";
+    if (temValor && !(money(data.valorTotal) >= 30)) return { success: false, error: "O valor da cota deve ser de pelo menos R$ 30,00 (5 jogos de R$ 6,00)." };
     Object.assign(cfg, {
       pixKey,
       pixTipo: String(data.pixTipo ?? "").trim() || cfg.pixTipo,
       pixNome: String(data.pixNome ?? "").trim() || cfg.pixNome,
+      pixBanco: String(data.pixBanco ?? "").trim().slice(0, 80),
       notificationEmail: String(data.notificationEmail ?? "").trim(),
+      ...(temValor ? { valorTotal: money(data.valorTotal).toFixed(2) } : {}),
     });
     db.set("config", cfg);
-    return { success: true, message: "Configurações (PIX e notificações) salvas com sucesso!", config: cfg };
+    return { success: true, message: "Configurações salvas com sucesso!", config: cfg };
   },
 
   adminCloseBolao(data) { return setStatus(data, { StatusBolao: "Fechado" }, "Bolão fechado com sucesso. Novos cadastros e confirmações de pagamento estão bloqueados."); },

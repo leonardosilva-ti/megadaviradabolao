@@ -98,7 +98,7 @@
         <button class="tabs__btn" role="tab" data-action="tab" data-tab="novo">➕ Novo jogo oficial</button>
         <button class="tabs__btn" role="tab" data-action="tab" data-tab="oficiais">⭐ Jogos oficiais &amp; exportação</button>
         <button class="tabs__btn" role="tab" data-action="tab" data-tab="conferencia">🏆 Conferência</button>
-        <button class="tabs__btn" role="tab" data-action="tab" data-tab="config">⚙️ PIX &amp; notificações</button>
+        <button class="tabs__btn" role="tab" data-action="tab" data-tab="config">⚙️ PIX, cota &amp; notificações</button>
       </div>
 
       <!-- Participantes -->
@@ -206,7 +206,7 @@
 
       <!-- Configuração do PIX -->
       <form id="form-adm-pix" class="card stack" style="max-width:640px" data-panel="config" novalidate hidden>
-        <header class="card__header" style="margin:0"><h2 class="card__title">PIX e notificações</h2><span class="card__icon" aria-hidden="true">🏦</span></header>
+        <header class="card__header" style="margin:0"><h2 class="card__title">PIX, cota e notificações</h2><span class="card__icon" aria-hidden="true">🏦</span></header>
         <div class="field">
           <label class="label" for="cfg-pix">Chave PIX</label>
           <input class="input mono" id="cfg-pix" name="pixKey" type="text" maxlength="120" placeholder="E-mail, CPF, celular ou chave aleatória" required>
@@ -227,6 +227,16 @@
             <label class="label" for="cfg-nome">Titular da conta</label>
             <input class="input" id="cfg-nome" name="pixNome" type="text" maxlength="100" placeholder="Nome que aparece no banco">
           </div>
+        </div>
+        <div class="field">
+          <label class="label" for="cfg-banco">Instituição (banco)</label>
+          <input class="input" id="cfg-banco" name="pixBanco" type="text" maxlength="80" placeholder="Ex.: Nubank, Banco do Brasil, Inter">
+          <span class="hint">Aparece para o participante junto com a chave, para ele conferir antes de pagar.</span>
+        </div>
+        <div class="field">
+          <label class="label" for="cfg-valor">💰 Valor da cota (R$)</label>
+          <input class="input mono" id="cfg-valor" name="valorTotal" type="text" inputmode="decimal" maxlength="10" placeholder="60,00" required>
+          <span class="hint" id="cfg-valor-divisao"></span>
         </div>
         <div class="field">
           <label class="label" for="cfg-email">📬 E-mail para notificações</label>

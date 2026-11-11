@@ -20,7 +20,7 @@ export const EDICAO = {
 
 /** Regras da cota. O valor total pode ser sobrescrito pela chave ValorTotal da aba Config. */
 export const COTA = {
-  total: 45,
+  total: 60, // R$ 30 dos 5 jogos + R$ 30 para o fundo dos jogos de 7, 8 e 9 dezenas
   precoAposta: 6, // aposta simples de 6 dezenas
 };
 
@@ -31,5 +31,5 @@ export const TAMANHOS_JOGO_OFICIAL = [6, 7, 8, 9];
 /** Usado apenas no modo demonstração (no modo real os dados vêm da aba Config da planilha). */
 export const DEMO = {
   adminSenha: "adminmega2025",
-  pix: { chave: "pix.bolao.mega@exemplo.com", tipo: "E-mail", titular: "Organizador do Bolão" },
+  pix: { chave: "pix.bolao.mega@exemplo.com", tipo: "E-mail", titular: "Organizador do Bolão", banco: "Banco Exemplo" },
 };
