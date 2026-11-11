@@ -473,10 +473,11 @@ details.disclosure > .disclosure__body { margin-top: 10px; }
 }
 .aviso-pag:hover { border-style: solid; }
 
-/* Botão de modo claro/escuro */
-.btn--theme { gap: 6px; }
-.btn--theme [data-theme-icon] { font-size: 15px; line-height: 1; }
-@media (max-width: 640px) { .btn--theme { width: 34px; padding: 0; } }
+/* Botões do cabeçalho (tema, regras, instalar, ver site): mesmo estilo em todas as telas.
+   Computador: ícone + texto com borda. Celular: quadrado só com o ícone. */
+.btn--hdr { gap: 6px; }
+.btn--hdr > span[aria-hidden] { font-size: 15px; line-height: 1; }
+@media (max-width: 640px) { .btn--hdr { width: 34px; padding: 0; } }
 
 /* Botão redondo "i" de informação */
 .btn-info {
